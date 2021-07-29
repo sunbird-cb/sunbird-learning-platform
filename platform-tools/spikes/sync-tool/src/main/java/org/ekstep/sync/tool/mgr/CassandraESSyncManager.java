@@ -4,29 +4,6 @@
  */
 package org.ekstep.sync.tool.mgr;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.ekstep.common.Platform;
-import org.ekstep.common.dto.Response;
-import org.ekstep.common.exception.ClientException;
-import org.ekstep.common.exception.ServerException;
-import org.ekstep.common.mgr.ConvertToGraphNode;
-import org.ekstep.common.util.RequestValidatorUtil;
-import org.ekstep.graph.cache.util.RedisStoreUtil;
-import org.ekstep.graph.dac.model.Node;
-import org.ekstep.graph.model.node.DefinitionDTO;
-import org.ekstep.graph.service.common.DACConfigurationConstants;
-import org.ekstep.learning.hierarchy.store.HierarchyStore;
-import org.ekstep.learning.util.ControllerUtil;
-import org.ekstep.sync.tool.util.ElasticSearchConnector;
-import org.ekstep.sync.tool.util.GraphUtil;
-import org.ekstep.sync.tool.util.SyncMessageGenerator;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +13,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.UrlValidator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.ekstep.common.Platform;
+import org.ekstep.common.dto.Response;
+import org.ekstep.common.exception.ClientException;
+import org.ekstep.common.exception.ServerException;
+import org.ekstep.common.mgr.ConvertToGraphNode;
+import org.ekstep.common.util.RequestValidatorUtil;
+import org.ekstep.content.entity.Manifest;
+import org.ekstep.content.entity.Media;
+import org.ekstep.content.entity.Plugin;
+import org.ekstep.content.operation.initializer.BaseInitializer;
+import org.ekstep.graph.cache.util.RedisStoreUtil;
+import org.ekstep.graph.dac.model.Node;
+import org.ekstep.graph.model.node.DefinitionDTO;
+import org.ekstep.graph.service.common.DACConfigurationConstants;
+import org.ekstep.learning.contentstore.ContentStore;
+import org.ekstep.learning.hierarchy.store.HierarchyStore;
+import org.ekstep.learning.util.CloudStore;
+import org.ekstep.learning.util.ControllerUtil;
+import org.ekstep.sync.tool.util.DialcodeSync;
+import org.ekstep.sync.tool.util.ElasticSearchConnector;
+import org.ekstep.sync.tool.util.GraphUtil;
+import org.ekstep.sync.tool.util.SyncMessageGenerator;
+import org.ekstep.telemetry.logger.TelemetryManager;
+import org.springframework.stereotype.Component;
 
 @Component
 public class CassandraESSyncManager {
@@ -51,16 +61,26 @@ public class CassandraESSyncManager {
 
 
     private HierarchyStore hierarchyStore = new HierarchyStore();
+    private ContentStore contentStore = new ContentStore();
+    private DialcodeSync dialcodeSync = new DialcodeSync();
     private ElasticSearchConnector searchConnector = new ElasticSearchConnector();
     private static final String COLLECTION_MIMETYPE = "application/vnd.ekstep.content-collection";
     private static String graphPassportKey = Platform.config.getString(DACConfigurationConstants.PASSPORT_KEY_BASE_PROPERTY);
-    private static List<String> nestedFields = Platform.config.getStringList("nested.fields");
     private List<String> relationshipProperties = Platform.config.hasPath("content.relationship.properties") ?
             Arrays.asList(Platform.config.getString("content.relationship.properties").split(",")) : Collections.emptyList();
-
     private static final String CACHE_PREFIX = "hierarchy_";
+    private static final String PRIMARY_CATEGORY = "primaryCategory";
+    private static final String AUDIENCE = "audience";
+    private static final Map<String, String> contentTypeToPrimaryCategory = Platform.config.hasPath("contentTypeToPrimaryCategory") ?
+            (Map<String, String>) Platform.config.getAnyRef("contentTypeToPrimaryCategory") : new HashMap<String, String>();
+    private List<String> validCollectionStatus = Arrays.asList("Live", "Unlisted");
 
-
+    public CassandraESSyncManager() {}
+    
+    public CassandraESSyncManager(DialcodeSync dialcodeSync) {
+		this.dialcodeSync = dialcodeSync;
+	}
+    
     @PostConstruct
     private void init() throws Exception {
         definitionDTO = util.getDefinition(graphId, objectType);
@@ -207,7 +227,7 @@ public class CassandraESSyncManager {
         try {
             Node node = ConvertToGraphNode.convertToGraphNode(childData, definitionDTO, null);
             node.setGraphId(graphId);
-            node.setObjectType(objectType);
+            node.setObjectType("Collection");
             node.setNodeType(nodeType);
             Map<String, Object> nodeMap = SyncMessageGenerator.getMessage(node);
             Map<String, Object>  message = SyncMessageGenerator.getJSONMessage(nodeMap, relationMap);
@@ -441,5 +461,173 @@ public class CassandraESSyncManager {
             }
         }
     }
+    
+    public void syncECMLContent(List<String> contentIds) {
+    	if(CollectionUtils.isNotEmpty(contentIds)) {
+    		System.out.println("Content came for handling external link:  " + contentIds.toString());
+    		List<String> contentWithNoBody = new ArrayList<>();
+    		List<String> contentWithExternalLink = new ArrayList<>();
+    		List<String> contentWithNoExternalLink = new ArrayList<>();
+    		contentIds.stream().forEach(x -> handleAssetWithExternalLink(contentWithNoExternalLink, contentWithExternalLink, contentWithNoBody, x));
+    		System.out.println("Content Body not exists for content:  " + contentWithNoBody.toString());
+    		System.out.println("Content with External Link:  " + contentWithExternalLink.toString());
+    		System.out.println("Content with no External Link:  " + contentWithNoExternalLink.toString());
+    	}
+    }
+    
+    public void handleAssetWithExternalLink(List<String> contentWithNoExternalLink, List<String> contentWithExternalLink, List<String> contentWithNoBody, String contentId) {
+    	String contentBody = contentStore.getContentBody(contentId);
+    	
+    	if(StringUtils.isNoneBlank(contentBody)) {
+    		BaseInitializer baseInitializer = new BaseInitializer();
+    		Plugin plugin = null;
+    		
+    		try {
+    			plugin = baseInitializer.getPlugin(contentBody);
+    		}catch(Exception e) {
+    			System.out.println("Exception while rendring body for content : " + contentId + " ** Exception: " + e);
+    		}
+    		
+    		if (null != plugin) {
+    			try {
+    				Manifest manifest = plugin.getManifest();
+    				if (null != manifest) {
+    					List<Media> medias = manifest.getMedias();
+    					if(CollectionUtils.isNotEmpty(medias)) {
+    						List<Map<String, Object>> externalLink = new ArrayList<Map<String,Object>>();
+    						for (Media media: medias) {
+    							TelemetryManager.log("Validating Asset for External link: " + media.getId());
+    							if(validateAssetMediaForExternalLink(media)) {
+    								Map<String, Object> assetMap = new HashMap<String, Object>();
+    								assetMap.put("id", media.getId());
+    								assetMap.put("src", media.getSrc());
+    								assetMap.put("type", media.getType());
+    								externalLink.add(assetMap);
+    							}
+    						}
+    						if(CollectionUtils.isNotEmpty(externalLink)) {
+    							contentWithExternalLink.add(contentId);
+    							contentStore.updateExternalLink(contentId, externalLink);
+    						}else {
+    							contentWithNoExternalLink.add(contentId);
+    						}
+    					}
+    				}
+    			}catch(Exception e) {
+    				TelemetryManager.error("Error while pushing externalLink details of content Id: " + contentId +" into cassandra.", e);
+    			}
+    		}
+    	}else {
+    		contentWithNoBody.add(contentId);
+    	}
+    }
+	
+	protected boolean validateAssetMediaForExternalLink(Media media){
+		boolean isExternal = false;
+		UrlValidator validator = new UrlValidator();
+		String urlLink = media.getSrc();
+		if(StringUtils.isNotBlank(urlLink) && 
+				validator.isValid(media.getSrc()) &&
+				!StringUtils.contains(urlLink, CloudStore.getContainerName()))
+			isExternal = true; 
+		return isExternal;
+	}
+	
+	public void syncDialcodesByIds(List<String> dialcodes) throws Exception {
+		if(CollectionUtils.isEmpty(dialcodes)) {
+			System.out.println("CassandraESSyncManager:syncDialcodesByIds:No dialcodes for syncing.");
+			return;
+		}
+		System.out.println("CassandraESSyncManager:syncDialcodesByIds:No dialcodes for syncing: " + dialcodes.size());
+		int dialcodeSyncedCount = dialcodeSync.sync(dialcodes);
+		System.out.println("CassandraESSyncManager:syncDialcodesByIds::dialcodeSyncedCount: " + dialcodeSyncedCount);
+		
+	}
 
+    public void syncCollectionIds(String graphId, List<String> resourceIds) {
+        List<String> success = new ArrayList<String>();
+        List<String> failed = new ArrayList<String>();
+        if (CollectionUtils.isNotEmpty(resourceIds)) {
+            resourceIds.forEach(collection -> {
+                Boolean flag = syncCollection(graphId, collection);
+                if(flag)
+                    success.add(collection);
+                else
+                    failed.add(collection);
+            });
+        }
+        System.out.println("Success : " +  success);
+        System.out.println("Failed : " + failed);
+    }
+
+    public Boolean syncCollection(String graphId, String resourceId) {
+        this.graphId = RequestValidatorUtil.isEmptyOrNull(graphId) ? "domain" : graphId;
+        try {
+            Map<String, Object> hierarchy = getTextbookHierarchy(resourceId);
+            if (MapUtils.isNotEmpty(hierarchy)) {
+                Node node = util.getNode("domain", resourceId);
+                updateHierarchyMetadata(hierarchy, node);
+                Map<String, Object> units = getUnitsMetadata(hierarchy, node);
+
+                hierarchyStore.saveOrUpdateHierarchy(node.getIdentifier(), hierarchy);
+                //Clear Collection from Redis Cache
+                RedisStoreUtil.delete(CACHE_PREFIX + resourceId);
+                if(MapUtils.isNotEmpty(units)){
+                    pushToElastic(units);
+                    List<String> collectionUnitIds = new ArrayList<>(units.keySet());
+                    //Clear CollectionUnits from Cassandra Hierarchy Store
+                    hierarchyStore.deleteHierarchy(collectionUnitIds);
+                    //Clear CollectionUnits from Redis Cache
+                    collectionUnitIds.forEach(id -> RedisStoreUtil.delete(CACHE_PREFIX + id));
+                    printMessages("success", collectionUnitIds, resourceId);
+                }
+                return true;
+            } else {
+                System.out.println("CassandraESSyncManager:syncCollection:: " + resourceId + " is not a type of collection or it is not live.");
+                return false;
+            }
+        } catch (Exception e) {
+            System.out.println("CassandraESSyncManager:syncCollection:: Sync failed for collectionId : " + resourceId);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void updateHierarchyMetadata(Map<String, Object> hierarchy, Node node) {
+        if (node != null && validCollectionStatus.contains(node.getMetadata().get("status"))) {
+            if (node.getMetadata().containsKey(PRIMARY_CATEGORY) && !hierarchy.containsKey(PRIMARY_CATEGORY)) {
+                hierarchy.put(PRIMARY_CATEGORY, node.getMetadata().get(PRIMARY_CATEGORY));
+            }
+            if (node.getMetadata().containsKey(AUDIENCE)) {
+                hierarchy.put(AUDIENCE, mapper.convertValue(node.getMetadata().get(AUDIENCE), new TypeReference<ArrayList<String>>() {
+                }));
+            }
+        }
+    }
+
+    public Map<String, Object> getUnitsMetadata(Map<String, Object> hierarchy, Node node) {
+        Map<String, Object> unitsMetadata = new HashMap<>();
+        getUnitsToBeSynced(unitsMetadata, (List<Map<String, Object>>) hierarchy.get("children"), node);
+        return unitsMetadata;
+    }
+
+    private void getUnitsToBeSynced(Map<String, Object> unitsMetadata, List<Map<String, Object>> children, Node node) {
+        if (CollectionUtils.isNotEmpty(children)) {
+            children.forEach(child -> {
+                if (child.containsKey("visibility") && StringUtils.equalsIgnoreCase((String) child.get("visibility"), "parent")) {
+                    if (!child.containsKey(PRIMARY_CATEGORY)) {
+                        String contentType = (String) child.get("contentType");
+                        child.put(PRIMARY_CATEGORY, contentTypeToPrimaryCategory.getOrDefault(contentType, ""));
+                    }
+                    if (node != null && node.getMetadata().containsKey(AUDIENCE)) {
+                        child.put(AUDIENCE, mapper.convertValue(node.getMetadata().get(AUDIENCE), new TypeReference<ArrayList<String>>() {}));
+                    }
+                    populateESDoc(unitsMetadata, child);
+                    if (child.containsKey("children")) {
+                        getUnitsToBeSynced(unitsMetadata, (List<Map<String, Object>>) child.get("children"), node);
+                    }
+                }
+            });
+        }
+    }
 }

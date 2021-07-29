@@ -31,6 +31,7 @@ import org.ekstep.telemetry.dto.TelemetryBJREvent;
 import org.ekstep.telemetry.logger.TelemetryManager;
 
 import com.rits.cloning.Cloner;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -51,7 +52,7 @@ public class PublishPipelineService implements ISamzaService {
 
 	private SystemStream systemStream = null;
 	private SystemStream postPublishStream = null;
-	
+	private SystemStream postPublishMVCStream = null;
 	private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
 	private static ObjectMapper mapper = new ObjectMapper();
@@ -74,6 +75,9 @@ public class PublishPipelineService implements ISamzaService {
 		LOGGER.info("Stream initialized for Failed Events");
 		postPublishStream = new SystemStream("kafka", config.get("post.publish.event.topic"));
 		LOGGER.info("Stream initialized for Post Publish Events");
+		postPublishMVCStream = new SystemStream("kafka",config.get("post.publish.mvc.topic"));
+		LOGGER.info("Stream initialized for Post Publish MVC Content Events");
+
 	}
 
 	@Override
@@ -86,7 +90,10 @@ public class PublishPipelineService implements ISamzaService {
 			return;
 		}
 		Map<String, Object> edata = (Map<String, Object>) message.get(PublishPipelineParams.edata.name());
+		LOGGER.info("Edata :: " + edata);
 		Map<String, Object> object = (Map<String, Object>) message.get(PublishPipelineParams.object.name());
+		LOGGER.info("object :: " + object);
+
 
 		if (!validateObject(edata) || null == object) {
 			LOGGER.info("Ignoring the message because it is not valid for publishing.");
@@ -94,9 +101,13 @@ public class PublishPipelineService implements ISamzaService {
 		}
 
 		String nodeId = (String) object.get(PublishPipelineParams.id.name());
+		LOGGER.info("nodeId :: " + nodeId);
+
 		if (StringUtils.isNotBlank(nodeId)) {
 			try {
 				Node node = getNode(nodeId);
+				LOGGER.info("node :: " + node);
+
 				if (null != node) {
 					if (prePublishValidation(node, (Map<String, Object>) edata.get("metadata"))) {
 						LOGGER.info(
@@ -145,17 +156,7 @@ public class PublishPipelineService implements ISamzaService {
 		Node node = getNode(contentId);
 		String publishType = (String) edata.get(PublishPipelineParams.publish_type.name());
 		node.getMetadata().put(PublishPipelineParams.publish_type.name(), publishType);
-		if (publishContent(node, publishType)) {
-			metrics.incSuccessCounter();
-			edata.put(PublishPipelineParams.status.name(), PublishPipelineParams.SUCCESS.name());
-			LOGGER.debug("Node publish operation :: SUCCESS :: For NodeId :: " + node.getIdentifier());
-			pushInstructionEvent(node, collector);
-		} else {
-			edata.put(PublishPipelineParams.status.name(), PublishPipelineParams.FAILED.name());
-			LOGGER.debug("Node publish operation :: FAILED :: For NodeId :: " + node.getIdentifier());
-			throw new PlatformException(PlatformErrorCodes.PUBLISH_FAILED.name(),
-					"Node publish operation failed for Node Id:" + node.getIdentifier());
-		}
+		publishContent(node, edata, metrics, collector);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -182,21 +183,23 @@ public class PublishPipelineService implements ISamzaService {
 		return node;
 	}
 
-	private boolean publishContent(Node node, String publishType) throws Exception {
+	private void publishContent(Node node, Map<String, Object> edata, JobMetrics metrics, MessageCollector collector) throws Exception {
 		boolean published = true;
 		LOGGER.debug("Publish processing start for content: " + node.getIdentifier());
 		publishNode(node, (String) node.getMetadata().get(PublishPipelineParams.mimeType.name()));
-		
 		Node publishedNode = getNode(node.getIdentifier().replace(".img", ""));
 		if (StringUtils.equalsIgnoreCase((String) publishedNode.getMetadata().get(PublishPipelineParams.status.name()),
-				PublishPipelineParams.Failed.name()))
-			return false;
-		
-		return published;
-	}
-	
-	protected static String formatCurrentDate() {
-		return format(new Date());
+				PublishPipelineParams.Failed.name())) {
+			edata.put(PublishPipelineParams.status.name(), PublishPipelineParams.FAILED.name());
+			LOGGER.debug("Node publish operation :: FAILED :: For NodeId :: " + node.getIdentifier());
+			throw new PlatformException(PlatformErrorCodes.PUBLISH_FAILED.name(),
+					"Node publish operation failed for Node Id:" + node.getIdentifier());
+		} else {
+			metrics.incSuccessCounter();
+			edata.put(PublishPipelineParams.status.name(), PublishPipelineParams.SUCCESS.name());
+			LOGGER.debug("Node publish operation :: SUCCESS :: For NodeId :: " + node.getIdentifier());
+			pushInstructionEvent(publishedNode, collector);
+		}
 	}
 
 	protected static String format(Date date) {
@@ -259,6 +262,7 @@ public class PublishPipelineService implements ISamzaService {
         String action = (String) edata.get("action");
         String contentType = (String) edata.get(PublishPipelineParams.contentType.name());
         Integer iteration = (Integer) edata.get(PublishPipelineParams.iteration.name());
+        //TODO: remove contentType validation
         if (StringUtils.equalsIgnoreCase("publish", action) && (!StringUtils.equalsIgnoreCase(contentType,
                 PublishPipelineParams.Asset.name())) &&  (iteration <= getMaxIterations())) {
                 return true;
@@ -266,29 +270,60 @@ public class PublishPipelineService implements ISamzaService {
         return false;
     }
 
-	private void pushInstructionEvent(Node node, MessageCollector collector) throws Exception{
+	private void pushInstructionEvent(Node node, MessageCollector collector) throws Exception {
 		Map<String, Object> actor = new HashMap<String, Object>();
 		Map<String, Object> context = new HashMap<String, Object>();
 		Map<String, Object> object = new HashMap<String, Object>();
 		Map<String, Object> edata = new HashMap<String, Object>();
 		String mimeType = (String) node.getMetadata().get("mimeType");
-		if (StringUtils.isNotBlank(mimeType) && StringUtils.equals(mimeType, "application/vnd.ekstep.content-collection")) {
-			Map<String, Object> linkDialcodeEvent = generateInstructionEventMetadata(actor, context, object, edata, node.getMetadata(), node.getIdentifier(), "link-dialcode");
-
-			if (MapUtils.isEmpty(linkDialcodeEvent)) {
-				TelemetryManager.error("Post Publish event is not generated properly. #postPublishJob : " + linkDialcodeEvent);
-				throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.");
+		String sourceURL = node.getMetadata().get("sourceURL") != null ? (String)node.getMetadata().get("sourceURL") : null;
+		if(StringUtils.isNotBlank(sourceURL)){
+			Map<String, Object> mvcProcessorEvent = generateInstructionEventMetadata(actor, context, object, edata, node.getMetadata(), node.getIdentifier(), "link-dialcode");
+			mvcProcessorEvent=  updatevaluesForMVCEvent(mvcProcessorEvent);
+			if (MapUtils.isEmpty(mvcProcessorEvent)) {
+				TelemetryManager.error("Post Publish event is not generated properly. #postPublishJob : " + mvcProcessorEvent);
+				throw new ClientException("MVC_JOB_REQUEST_EXCEPTION", "Event is not generated properly.");
 			}
-			collector.send(new OutgoingMessageEnvelope(postPublishStream, linkDialcodeEvent));
-
-			Map<String, Object> courseBatchSyncEvent = generateInstructionEventMetadata(actor, context, object, edata, node.getMetadata(), node.getIdentifier(), "coursebatch-sync");
-			if (MapUtils.isEmpty(courseBatchSyncEvent)) {
-				TelemetryManager.error("Post Publish event is not generated properly. #postPublishJob : " + courseBatchSyncEvent);
-				throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.");
-			}
-			collector.send(new OutgoingMessageEnvelope(postPublishStream, courseBatchSyncEvent));
-			LOGGER.info("Event sent to post publish event topic");
+			collector.send(new OutgoingMessageEnvelope(postPublishMVCStream, mvcProcessorEvent));
+			LOGGER.info("All Events sent to post publish mvc event topic");
 		}
+
+        Map<String, Object> postPublishEvent = generateInstructionEventMetadata(actor, context, object, edata, node.getMetadata(), node.getIdentifier(), "post-publish-process");
+        if (MapUtils.isEmpty(postPublishEvent)) {
+            TelemetryManager.error("Post Publish event is not generated properly. #postPublishJob : " + postPublishEvent);
+            throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.");
+        }
+        collector.send(new OutgoingMessageEnvelope(postPublishStream, postPublishEvent));
+
+        // TODO: delete below block after flink generic implementation.
+        if (StringUtils.isNotBlank(mimeType) && StringUtils.equals(mimeType, "application/vnd.ekstep.content-collection")) {
+            Map<String, Object> linkDialcodeEvent = generateInstructionEventMetadata(actor, context, object, edata, node.getMetadata(), node.getIdentifier(), "link-dialcode");
+
+            if (MapUtils.isEmpty(linkDialcodeEvent)) {
+                TelemetryManager.error("Post Publish event is not generated properly. #postPublishJob : " + linkDialcodeEvent);
+                throw new ClientException("BE_JOB_REQUEST_EXCEPTION", "Event is not generated properly.");
+            }
+            collector.send(new OutgoingMessageEnvelope(postPublishStream, linkDialcodeEvent));
+            LOGGER.info("OLD format Event - link-dialcode - sent to post publish event topic");
+        }
+        LOGGER.info("All Events sent to post publish event topic");
+	}
+
+	Map<String,Object> updatevaluesForMVCEvent(Map<String,Object> mvcProcessorEvent) {
+		mvcProcessorEvent.put("eventData",mvcProcessorEvent.get("edata"));
+		mvcProcessorEvent.put("eid","MVC_JOB_PROCESSOR");
+		mvcProcessorEvent.remove("edata");
+		Map<String,Object> eventData = (Map<String,Object>) mvcProcessorEvent.get("eventData");
+		eventData.put("identifier",eventData.get("id"));
+		eventData.remove("id");
+		eventData.remove("iteration");
+		eventData.remove("mimeType");
+		eventData.remove("contentType");
+        eventData.remove("pkgVersion");
+        eventData.remove("status");
+		eventData.put("action","update-es-index");
+		eventData.put("stage",1);
+		return mvcProcessorEvent;
 	}
 
 	private Map<String, Object> generateInstructionEventMetadata(Map<String, Object> actor, Map<String, Object> context,
@@ -309,14 +344,19 @@ public class PublishPipelineService implements ISamzaService {
 		object.put("id", contentId);
 		object.put("ver", metadata.get("versionKey"));
 
-		Map<String, Object> instructionEventMetadata = new HashMap<>();
-		instructionEventMetadata.put("pkgVersion", metadata.get("pkgVersion"));
-		instructionEventMetadata.put("mimeType", metadata.get("mimeType"));
-		instructionEventMetadata.put("lastPublishedBy", metadata.get("lastPublishedBy"));
-
 		edata.put("action", action);
 		edata.put("contentType", metadata.get("contentType"));
+		edata.put("status", metadata.get("status"));
+		// TODO: remove 'id' after mvc-processor handled it.
 		edata.put("id", contentId);
+        edata.put("identifier", contentId);
+		edata.put("pkgVersion", metadata.get("pkgVersion"));
+		edata.put("mimeType", metadata.get("mimeType"));
+        edata.put("name", metadata.get("name"));
+        edata.put("createdBy", metadata.get("createdBy"));
+        edata.put("createdFor", metadata.get("createdFor"));
+        edata.put("trackable", metadata.get("trackable"));
+
 		// generate event structure
 		long unixTime = System.currentTimeMillis();
 		String mid = "LP." + System.currentTimeMillis() + "." + UUID.randomUUID();
@@ -337,4 +377,5 @@ public class PublishPipelineService implements ISamzaService {
 		}
 		return event;
 	}
+
 }

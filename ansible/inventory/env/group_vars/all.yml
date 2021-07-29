@@ -18,11 +18,14 @@ learner_user_home: "/home/{{ learner_user }}"
 # these  variables can be defined as {{instance}}_*
 content_keyspace_name: "{{instance}}_content_store"
 hierarchy_keyspace_name: "{{instance}}_hierarchy_store"
-orchestrator_keyspace_name: "{{instance}}_script_store"
 dialcode_keyspace_name: "{{instance}}_dialcode_store"
+category_keyspace_name: "{{instance}}_category_store"
+assessment_keyspace_name: "{{instance}}_question_store"
+
 
 dp_cassandra_connection: "{{ groups['dp-cassandra'][0] }}:9042"
 core_cassandra_connection: "{{groups['core-cassandra']|join(':9042,')}}:9042"
+core_cassandra_connection_ip: "{{ groups['core-cassandra'][0] }}"
 
 
 dial_service_generate_url: "{{ekstep_domain_name}}/api/dialcode/v3/generate"
@@ -52,29 +55,21 @@ other_bolt_write_url: bolt://{{ groups['learning-neo4j-cluster'][0] }}:8687
 lp_cassandra_connection: "{{groups['cassandra']|join(':9042,')}}:9042"
 cassandra_host: "{{ groups['cassandra'][0] }}"
 redis_host: "{{ groups['redis1'][0] }}"
+dp_redis_host: "{{ groups['dp-redis'][0] }}"
 kafka_brokers: "{{groups['processing-cluster-kafka']|join(':9092,')}}:9092"
 zookeepers: "{{groups['processing-cluster-zookeepers']|join(':2181,')}}:2181"
 audit_es_host: "{{ groups['composite-search-cluster']|join(':9200,')}}:9200"
 search_es_host: "{{ groups['composite-search-cluster']|join(':9200,')}}:9200"
 search_lms_es_host: "{{ groups['core-es']|join(':9200,')}}:9200"
 
-azure_account_key: "{{lp_vault_azure_storage_secret}}"
-azure_storage_secret: "{{lp_vault_azure_storage_secret}}"
 graph_passport_key: "{{ lp_vault_graph_passport_key }}"
 dial_service_authorization: "{{ lp_vault_dial_service_authorization }}"
 youtube_api_key: "{{ lp_vault_youtube_api_key }}"
-
-#### backup storage secret
-backup_azure_storage_account_name: "{{azure_account_name}}"
-backup_azure_storage_access_key: "{{lp_vault_azure_storage_secret}}"
 
 ## es backup
 es_snapshot_host: "{{ groups['composite-search-cluster'][0] }}"
 snapshot_base_path: compositesearch
 
-#artfiact upload download
-artifact_azure_account_name: "{{azure_account_name}}"
-artifact_azure_account_key: "{{lp_vault_azure_storage_secret}}"
 
 #Learning-Service baseURL
 kp_learning_service_base_url: "http://{{ groups['learning1'][0] }}:8080/learning-service"
@@ -88,5 +83,33 @@ learner_service_base_url: "http://{{swarm_manager_lb_ip}}:9000"
 cert_service_base_url: "http://{{swarm_manager_lb_ip}}:9011"
 certificate_base_path: "https://{{domain_name}}/certs"
 kp_content_service_base_url: "http://{{swarm_manager_lb_ip}}:9002"
+kp_search_service_base_url: "http://{{swarm_manager_lb_ip}}:9004"
 kp_print_service_base_url: "http://{{swarm_manager_lb_ip}}:5001"
 cert_reg_service_base_url: "http://{{swarm_manager_lb_ip}}:9013"
+lms_service_base_url: "http://{{swarm_manager_lb_ip}}:9005"
+
+search_es7_host: "{{ groups['es7']|join(':9200,')}}:9200"
+
+mlworkbench: "{{ groups['mlworkbench'][0]}}"
+
+azure_account: "{{ sunbird_public_storage_account_name }}"
+azure_secret: "{{ sunbird_public_storage_account_key }}"
+dp_redis_host: "{{ groups['dp-redis'][0] }}"
+dedup_redis_host: "{{ dp_redis_host }}"
+kp_redis_host: "{{ groups['redisall'][0] }}"
+neo4j_route_path: "bolt://{{ groups['learning-neo4j-node1'][0] }}:7687"
+
+### Global vars
+flink_namespace: "flink-kp-{{ instance }}"
+middleware_hierarchy_keyspace: "{{ instance }}_hierarchy_store"
+kp_search_service_base_url: "http://{{private_ingressgateway_ip}}/search"
+lms_service_base_url: "http://{{private_ingressgateway_ip}}/lms"
+learner_service_base_url: "http://{{private_ingressgateway_ip}}/learner"
+content_service_base_url: "http://{{private_ingressgateway_ip}}/content"
+certificate_base_path: "https://{{domain_name}}/certs"
+enc_service_base_url: "http://{{private_ingressgateway_ip}}/enc"
+cert_domain_url:  "{{proto}}://{{domain_name}}"
+cert_container_name: "{{instance}}-e-credentials"
+cert_cloud_storage_type: "azure"
+cert_azure_storage_secret: "{{sunbird_private_storage_account_key}}"
+cert_azure_storage_key: "{{sunbird_private_storage_account_name}}"

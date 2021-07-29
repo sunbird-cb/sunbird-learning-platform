@@ -32,13 +32,17 @@ public class SyncShellCommands implements CommandMarker {
 	@CliCommand(value = "syncbyids", help = "Sync data from Neo4j to Elastic Search by Id(s)")
 	public void syncByIds(@CliOption(key = {
 			"graphId" }, mandatory = false, unspecifiedDefaultValue = "domain", help = "graphId of the object") final String graphId,
-			@CliOption(key = { "id", "ids" }, mandatory = true, help = "Unique Id of node object") final String[] ids)
+			@CliOption(key = { "id", "ids" }, mandatory = true, help = "Unique Id of node object") final String[] ids,
+			@CliOption(key = {"metaDataRefresh"}, mandatory = false, unspecifiedDefaultValue = "false", help = "Refresh node metadata") final String metaDataRefresh)
 			throws Exception {
 
 		long startTime = System.currentTimeMillis();
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 		LocalDateTime start = LocalDateTime.now();
-		indexSyncManager.syncByIds(graphId, new ArrayList<>(Arrays.asList(ids)));
+		if ("true".equalsIgnoreCase(metaDataRefresh))
+			syncManager.syncCollectionIds(graphId, new ArrayList<>(Arrays.asList(ids)));
+		else
+			indexSyncManager.syncByIds(graphId, new ArrayList<>(Arrays.asList(ids)));
 		long endTime = System.currentTimeMillis();
 		long exeTime = endTime - startTime;
 		System.out.println("Total time of execution: " + exeTime + "ms");
@@ -136,6 +140,28 @@ public class SyncShellCommands implements CommandMarker {
 		LocalDateTime end = LocalDateTime.now();
 		System.out.println("START_TIME: " + dtf.format(start) + ", END_TIME: " + dtf.format(end));
 	}
+	
+	@CliCommand(value = "syncdialcodes", help = "Refresh leafNodes by Id(s) for Collection MimeTypes")
+	public void syncDialcodes(
+			@CliOption(key = {"id","ids"}, mandatory = false, help = "Unique Id of node object") final String[] ids)
+			throws Exception {
+		long startTime = System.currentTimeMillis();
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+		LocalDateTime start = LocalDateTime.now();
+
+		if(null != ids && ids.length > 0) {
+			System.out.println("SyncShellCommands:syncDialcodes:Total dialcodes for syncing:: " + ids);
+			syncManager.syncDialcodesByIds(new ArrayList<String>(Arrays.asList(ids)));
+		}
+
+		long endTime = System.currentTimeMillis();
+		long exeTime = endTime - startTime;
+		System.out.println("Total time of execution: " + exeTime + "ms");
+		LocalDateTime end = LocalDateTime.now();
+		System.out.println("START_TIME: " + dtf.format(start) + ", END_TIME: " + dtf.format(end));
+		
+	}
+	
 	@CliCommand(value = "migratequestionextproperties", help = "Migrate AssessmentItems external properties")
 	public void migrateQuestionExternalProperties(
 			@CliOption(key = {"objectType"}, mandatory = true, help = "Object Type of assessmentItem") final String objectType,

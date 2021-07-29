@@ -53,6 +53,8 @@ public class AssetEnrichmentService implements ISamzaService {
 		else
 			return MAXITERTIONCOUNT;
 	}
+	private static final Boolean CONTENT_UPLOAD_CONTEXT_DRIVEN = Platform.config.hasPath("content.upload.context.driven") ? Platform.config.getBoolean("content.upload.context.driven") : true;
+	private static Boolean IS_STREAMING_ENABLED;
 
 	@Override
 	public void initialize(Config config) throws Exception {
@@ -62,17 +64,18 @@ public class AssetEnrichmentService implements ISamzaService {
 		LearningRequestRouterPool.init();
 		LOGGER.info("Akka actors initialized");
 		streamJobRequest  = new VideoStreamingJobRequest();
+		IS_STREAMING_ENABLED = Platform.config.hasPath("content.streaming_enabled") ? Platform.config.getBoolean("content.streaming_enabled") : false;
 	}
 
 	private boolean validateObject(Map<String, Object> edata) {
 
 		if (null == edata)
 			return false;
-		if(StringUtils.isNotBlank((String)edata.get(AssetEnrichmentEnums.contentType.name())) &&
+		if(StringUtils.isNotBlank((String)edata.get(AssetEnrichmentEnums.objectType.name())) &&
 				StringUtils.isNotBlank((String)edata.get(AssetEnrichmentEnums.mediaType.name())) &&
 				StringUtils.isNotBlank((String)edata.get(AssetEnrichmentEnums.status.name()))) {
 
-			if(StringUtils.equalsIgnoreCase((String)edata.get(AssetEnrichmentEnums.contentType.name()), AssetEnrichmentEnums.Asset.name()) &&
+			if(StringUtils.equalsIgnoreCase((String)edata.get(AssetEnrichmentEnums.objectType.name()), AssetEnrichmentEnums.Asset.name()) &&
 					(StringUtils.equalsIgnoreCase((String)edata.get(AssetEnrichmentEnums.mediaType.name()), AssetEnrichmentEnums.image.name()) ||
 							StringUtils.equalsIgnoreCase((String)edata.get(AssetEnrichmentEnums.mediaType.name()), AssetEnrichmentEnums.video.name()))){
 
@@ -106,8 +109,13 @@ public class AssetEnrichmentService implements ISamzaService {
 		try {
 			String nodeId = (String) object.get(AssetEnrichmentEnums.id.name());
 			Node node = util.getNode(AssetEnrichmentEnums.domain.name(), nodeId);
-			if ((null != node) && (node.getObjectType().equalsIgnoreCase(AssetEnrichmentEnums.content.name()))){
+			if ((null != node) && (node.getObjectType().equalsIgnoreCase(AssetEnrichmentEnums.asset.name()))){
 				String mediaType = (String)edata.get(AssetEnrichmentEnums.mediaType.name());
+				if(CONTENT_UPLOAD_CONTEXT_DRIVEN && 
+						StringUtils.isNoneBlank((String)node.getMetadata().get("artifactBasePath")) &&
+						StringUtils.isNoneBlank((String)node.getMetadata().get("artifactUrl"))) {
+					OptimizerUtil.replaceArtifactUrl(node);
+				}
 				if(StringUtils.equalsIgnoreCase(mediaType, "image"))
 					imageEnrichment(node);
 				else if (StringUtils.equalsIgnoreCase(mediaType, "video"))
@@ -165,10 +173,12 @@ public class AssetEnrichmentService implements ISamzaService {
 			node.getMetadata().put(AssetEnrichmentEnums.status.name(), AssetEnrichmentEnums.Live.name());
 			node.getMetadata().put(AssetEnrichmentEnums.variants.name(), variantsMap);
 		}
+		LOGGER.info("node metadata :: "+node.getMetadata());
 		Response res = util.updateNode(node);
 		if(checkError(res)) {
+
 			throw new ServerException(AssetEnrichmentEnums.PROCESSING_ERROR.name(), "Error! While Updating the Metadata | [Content Id: " +
-					node.getIdentifier() + "] :: " + res.getParams().getErr() + " :: " + res.getParams().getErrmsg());
+					node.getIdentifier() + "] :: " + res.getParams().getErr() + " :: " + res.getParams().getErrmsg() + " | Result: "+res.getResult());
 		}
 	}
 
@@ -314,7 +324,7 @@ public class AssetEnrichmentService implements ISamzaService {
 	public void pushStreamingUrlRequest(Node node, String videoUrl) {
         List<String> streamableMimeType = Platform.config.hasPath("stream.mime.type") ?
                 Arrays.asList(Platform.config.getString("stream.mime.type").split(",")) : Arrays.asList("video/mp4");
-        if (streamableMimeType.contains((String) node.getMetadata().get(AssetEnrichmentEnums.mimeType.name()))) {
+        if (IS_STREAMING_ENABLED && streamableMimeType.contains((String) node.getMetadata().get(AssetEnrichmentEnums.mimeType.name()))) {
             streamJobRequest.insert(node.getIdentifier(), videoUrl,
                     (String) node.getMetadata().get(AssetEnrichmentEnums.channel.name()), "1.0");
         }

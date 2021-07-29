@@ -1,6 +1,8 @@
 #Platform Configuration
 platform.services=["learning", "language", "config"]
 
+collection.only_published_children=true
+
 # Learning-Service Configuration
 learning.graph_ids=["domain"]
 content.metadata.visibility.parent=["textbookunit", "courseunit", "lessonplanunit"]
@@ -14,8 +16,6 @@ redis.port={{ redis_port }}
 redis.maxConnections=128
 
 # Cassandra Configuration
-orchestrator.keyspace.name="{{ orchestrator_keyspace_name }}"
-orchestrator.keyspace.table="script_data"
 content.keyspace.name="{{ content_keyspace_name }}"
 hierarchy.keyspace.name="{{ hierarchy_keyspace_name }}"
 content.hierarchy.table="content_hierarchy"
@@ -231,8 +231,8 @@ youtube.license.regex.pattern=["\\?vi?=([^&]*)", "watch\\?.*v=([^&]*)", "(?:embe
 
 #Azure Storage details
 cloud_storage_type="{{ cloud_store }}"
-azure_storage_key="{{ azure_account_name }}"
-azure_storage_secret="{{ azure_account_key }}"
+azure_storage_key="{{sunbird_public_storage_account_name}}"
+azure_storage_secret="{{sunbird_public_storage_account_key}}"
 azure_storage_container="{{ azure_public_container }}"
 
 installation.id="{{ instance_name }}"
@@ -283,3 +283,6 @@ content.license="CC BY 4.0"
 # Content Tagging Config
 content.tagging.backward_enable=true
 content.tagging.property="subject,medium"
+
+# Search Service Config
+kp.search_service.base_url="{{ kp_search_service_base_url }}"

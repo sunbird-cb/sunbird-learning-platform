@@ -1,6 +1,6 @@
 package org.sunbird.jobs.samza.service;
 
-import org.apache.commons.collections.CollectionUtils;
+import com.datastax.driver.core.Session;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.samza.config.Config;
 import org.apache.samza.system.SystemStream;
@@ -10,14 +10,11 @@ import org.ekstep.jobs.samza.service.ISamzaService;
 import org.ekstep.jobs.samza.service.task.JobMetrics;
 import org.ekstep.jobs.samza.util.JSONUtils;
 import org.ekstep.jobs.samza.util.JobLogger;
-import org.sunbird.jobs.samza.service.util.BatchEnrolmentSync;
 import org.sunbird.jobs.samza.service.util.BatchStatusUpdater;
-import org.sunbird.jobs.samza.service.util.CourseBatchUpdater;
 import org.sunbird.jobs.samza.util.CourseBatchParams;
 import org.apache.commons.collections.MapUtils;
+import org.sunbird.jobs.samza.service.util.BatchCountUpdater;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class CourseBatchUpdaterService implements ISamzaService {
@@ -25,9 +22,13 @@ public class CourseBatchUpdaterService implements ISamzaService {
     private SystemStream systemStream;
     private Config config = null;
     private static int MAXITERTIONCOUNT = 2;
-    private CourseBatchUpdater courseBatchUpdater = null;
-    private BatchEnrolmentSync batchEnrolmentSync = null;
     private BatchStatusUpdater batchStatusUpdater = null;
+    private BatchCountUpdater batchCountUpdater = null;
+    private Session cassandraSession = null;
+
+    public CourseBatchUpdaterService(Session cassandraSession) {
+        this.cassandraSession = cassandraSession;
+    }
 
     @Override
     public void initialize(Config config) throws Exception {
@@ -35,9 +36,8 @@ public class CourseBatchUpdaterService implements ISamzaService {
         JSONUtils.loadProperties(config);
         LOGGER.info("Service config initialized");
         systemStream = new SystemStream("kafka", config.get("output.failed.events.topic.name"));
-        courseBatchUpdater = new CourseBatchUpdater();
-        batchEnrolmentSync = new BatchEnrolmentSync();
-        batchStatusUpdater = new BatchStatusUpdater();
+        batchStatusUpdater = new BatchStatusUpdater(cassandraSession);
+        batchCountUpdater = new BatchCountUpdater(cassandraSession);
     }
 
     @Override
@@ -57,23 +57,12 @@ public class CourseBatchUpdaterService implements ISamzaService {
         if (StringUtils.isNotBlank(objectId)) {
             String action = (String) edata.get("action");
             switch (action) {
-                case "batch-enrolment-update":
-                    LOGGER.info("Enrolment update for : " + edata);
-                    courseBatchUpdater.updateBatchStatus(edata);
-                    break;
-                case "batch-enrolment-sync":
-                    LOGGER.info("Enrolment sync for : " + edata);
-                    List reset =  (List) edata.get("reset");
-                    if (CollectionUtils.isEmpty(reset)) {
-                        reset = new ArrayList();
-                    }
-                    reset.add("contentStatus");
-                    reset.add("lastReadContentId");
-                    reset.add("lastReadContentStatus");
-                    batchEnrolmentSync.syncEnrolment(edata);
-                    break;
                 case "batch-status-update":
                     batchStatusUpdater.update(edata);
+                    break;
+                case "course-batch-update":
+                    LOGGER.info("Batch Count update for : " + edata);
+                    batchCountUpdater.update(edata);
                     break;
                 default:
                     System.out.println("Invalid action provided: " + message);

@@ -33,6 +33,9 @@ public class LinkDialCodeOperation extends BaseContentManager {
 
     private final String ERR_DIALCODE_LINK_REQUEST = "Invalid Request.";
 
+    private final List<String> publishStatusList = Arrays.asList("Live", "Unlisted");
+    private final List<String> collectionDraftProperties = Arrays.asList("identifier", "children");
+    
     private final String DIALCODE_SEARCH_URI = Platform.config.hasPath("dialcode.api.search.url")
             ? Platform.config.getString("dialcode.api.search.url") : "http://localhost:8080/learning-service/v3/dialcode/search";
 
@@ -276,10 +279,15 @@ public class LinkDialCodeOperation extends BaseContentManager {
             requestMap.remove(rootNodeId);
         }
 
-        Response hierarchyResponse = getCollectionHierarchy(getImageId(rootNodeId));
+        String rootHierarchyId = getImageId(rootNodeId);
+        Response hierarchyResponse = getCollectionHierarchy(rootHierarchyId);
         if(checkError(hierarchyResponse)){
-            throw new ServerException(DialCodeEnum.ERR_DIALCODE_LINK.name(),
-                    "Unable to fetch Hierarchy for Root Node: [" + rootNodeId + "]");
+        	rootHierarchyId = rootNodeId;
+        	hierarchyResponse = getCollectionHierarchy(rootHierarchyId);
+        	if(checkError(hierarchyResponse)) {
+        		throw new ServerException(DialCodeEnum.ERR_DIALCODE_LINK.name(),
+                        "Unable to fetch Hierarchy for Root Node: [" + rootNodeId + "]");
+        	}
         }
         Map<String, Object> rootHierarchy = (Map<String, Object>) hierarchyResponse.getResult().get("hierarchy");
         List<Map<String, Object>> rootChildren = (List<Map<String, Object>>) rootHierarchy.get("children");
@@ -291,9 +299,14 @@ public class LinkDialCodeOperation extends BaseContentManager {
         } else {
             validateDuplicateDialCodes(rootNodeId, existingDialcodes, rootChildren, null);
         }
+        
+        if(rootHierarchy.containsKey("status") && publishStatusList.contains((String)rootHierarchy.get("status"))) {
+        	rootHierarchy.entrySet().removeIf(e -> !collectionDraftProperties.contains(e.getKey()));
+        	rootHierarchyId = getImageId(rootNodeId);
+        }
 
         //update cassandra
-        Response response = updateCollectionHierarchy(getImageId(rootNodeId),rootHierarchy);
+        Response response = updateCollectionHierarchy(rootHierarchyId,rootHierarchy);
         if (!checkError(response))
             resultMap.get("updateSuccessList").addAll(requestMap.keySet());
         else
@@ -326,10 +339,7 @@ public class LinkDialCodeOperation extends BaseContentManager {
      * @throws Exception
      */
     private Response updateDataNode(String identifier, Map<String, Object> map, String mode) throws Exception {
-        DefinitionDTO definition = getDefinition(TAXONOMY_ID, CONTENT_OBJECT_TYPE);
         String contentId=identifier;
-        String objectType = CONTENT_OBJECT_TYPE;
-        map.put("objectType", CONTENT_OBJECT_TYPE);
         map.put("identifier", contentId);
 
         boolean isImageObjectCreationNeeded = false;
@@ -345,19 +355,22 @@ public class LinkDialCodeOperation extends BaseContentManager {
         } else
             imageObjectExists = true;
 
-        List<String> externalPropsList = getExternalPropsList(definition);
+        
 
         Node graphNode = (Node) getNodeResponse.get(GraphDACParams.node.name());
         TelemetryManager.log("Graph node found: " + graphNode.getIdentifier());
         Map<String, Object> metadata = graphNode.getMetadata();
         String status = (String) metadata.get("status");
 
+        DefinitionDTO definition = getDefinition(TAXONOMY_ID, graphNode.getObjectType());
+        List<String> externalPropsList = getExternalPropsList(definition);
+
         boolean checkError = false;
         Response createResponse = null;
         if (finalStatus.contains(status)) {
             if (isImageObjectCreationNeeded) {
                 graphNode.setIdentifier(contentImageId);
-                graphNode.setObjectType(CONTENT_IMAGE_OBJECT_TYPE);
+                graphNode.setObjectType(graphNode.getObjectType() + DEFAULT_OBJECT_TYPE_IMAGE_SUFFIX);
                 metadata.put("status", "Draft");
                 Object lastUpdatedBy = map.get("lastUpdatedBy");
                 if (null != lastUpdatedBy)
@@ -379,10 +392,8 @@ public class LinkDialCodeOperation extends BaseContentManager {
                     map.put("versionKey", createResponse.get("versionKey"));
                 }
             }
-            objectType = CONTENT_IMAGE_OBJECT_TYPE;
             contentId = contentImageId;
         } else if (imageObjectExists) {
-            objectType = CONTENT_IMAGE_OBJECT_TYPE;
             contentId = contentImageId;
         }
 
@@ -391,14 +402,14 @@ public class LinkDialCodeOperation extends BaseContentManager {
 
         TelemetryManager.log("Updating content node: " + contentId);
         if (imageObjectExists || isImageObjectCreationNeeded) {
-            definition = getDefinition(TAXONOMY_ID, CONTENT_IMAGE_OBJECT_TYPE);
+            definition = getDefinition(TAXONOMY_ID, graphNode.getObjectType());
         }
         String passportKey = Platform.config.getString("graph.passport.key.base");
         map.put("versionKey", passportKey);
         Node domainObj = ConvertToGraphNode.convertToGraphNode(map, definition, graphNode);
         domainObj.setGraphId(TAXONOMY_ID);
         domainObj.setIdentifier(contentId);
-        domainObj.setObjectType(objectType);
+        domainObj.setObjectType(graphNode.getObjectType());
         createResponse = updateDataNode(domainObj);
 
         return createResponse;
