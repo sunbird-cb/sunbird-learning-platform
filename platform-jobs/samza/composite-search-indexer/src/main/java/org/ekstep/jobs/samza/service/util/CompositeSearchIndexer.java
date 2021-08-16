@@ -216,12 +216,24 @@ public class CompositeSearchIndexer extends AbstractESIndexer {
 		case CompositeSearchConstants.OPERATION_CREATE: {
 			Map<String, Object> indexDocument = getIndexDocument(message, relationMap, false, indexableProps);
 			String jsonIndexDocument = mapper.writeValueAsString(indexDocument);
+			try {   
+				System.out.println("New Content Request::");
+				System.out.println(jsonIndexDocument);
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
 			upsertDocument(uniqueId, jsonIndexDocument);
 			break;
 		}
 		case CompositeSearchConstants.OPERATION_UPDATE: {
 			Map<String, Object> indexDocument = getIndexDocument(message, relationMap, true, indexableProps);
 			String jsonIndexDocument = mapper.writeValueAsString(indexDocument);
+			try {   
+				System.out.println("Update Content Request::");
+				System.out.println(jsonIndexDocument);
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
 			upsertDocument(uniqueId, jsonIndexDocument);
 			break;
 		}
@@ -252,6 +264,9 @@ public class CompositeSearchIndexer extends AbstractESIndexer {
 	}
 
 	private void addMetadataToDocument(Map.Entry<String, Object> propertyMap, String propertyName, Map<String, Object> indexDocument) throws Exception {
+		System.out.println("Nested : field values and Property Name");
+		System.out.println(nestedFields);
+		System.out.println(propertyName);
 		// new value of the property
 		Object propertyNewValue = ((Map<String, Object>) propertyMap.getValue()).get("nv");
 		// New value from transaction data is null, then remove the property from document
