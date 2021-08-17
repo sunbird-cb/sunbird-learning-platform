@@ -219,7 +219,7 @@ public class CompositeSearchIndexer extends AbstractESIndexer {
 			try {   
 				System.out.println("New Content Request::");
 				System.out.println(jsonIndexDocument);
-			} catch (JsonProcessingException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			upsertDocument(uniqueId, jsonIndexDocument);
@@ -231,7 +231,7 @@ public class CompositeSearchIndexer extends AbstractESIndexer {
 			try {   
 				System.out.println("Update Content Request::");
 				System.out.println(jsonIndexDocument);
-			} catch (JsonProcessingException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			upsertDocument(uniqueId, jsonIndexDocument);
