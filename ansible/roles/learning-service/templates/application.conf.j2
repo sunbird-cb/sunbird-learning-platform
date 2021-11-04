@@ -46,6 +46,8 @@ audit.es_conn_info="{{ audit_es_index_host  }}"
 assessment.keyspace.name="{{ content_keyspace_name }}"
 assessment.keyspace.table="question_data"
 
+collection.only_published_children=true
+
 # Actor System Configuration
 LearningActorSystem {
   akka {
@@ -249,3 +251,6 @@ content.tagging.property="subject,medium"
 
 # Search Service Config
 kp.search_service.base_url="{{ kp_search_service_base_url }}"
+
+indexHtmlValidation.env=false
+
