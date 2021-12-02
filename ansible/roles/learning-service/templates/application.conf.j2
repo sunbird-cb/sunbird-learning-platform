@@ -48,6 +48,8 @@ audit.es_conn_info="{{ audit_es_index_host  }}"
 assessment.keyspace.name="{{ content_keyspace_name }}"
 assessment.keyspace.table="question_data"
 
+collection.only_published_children=true
+
 # Actor System Configuration
 LearningActorSystem {
   akka {
@@ -64,41 +66,6 @@ LearningActorSystem {
           throughput = 1
       }
       deployment {
-        /SearchManager 
-        {
-          router = smallest-mailbox-pool
-          nr-of-instances = 5
-        }
-        /HealthCheckManager
-        {
-          router = smallest-mailbox-pool
-                  nr-of-instances = 5
-        }
-      }
-    }
-  }
-}
-
-LanguageActorSystem {
-  akka {
-    actor {
-      default-dispatcher {
-        type = "Dispatcher"
-        executor = "fork-join-executor"
-        fork-join-executor {
-          parallelism-min = 1
-          parallelism-factor = 2.0
-          parallelism-max = 4
-        }
-        # Throughput for default Dispatcher, set to 1 for as fair as possible
-        throughput = 1
-      }
-      deployment {
-        /SearchManager 
-        {
-          router = smallest-mailbox-pool
-          nr-of-instances = 5
-        }
         /HealthCheckManager
         {
           router = smallest-mailbox-pool
@@ -199,6 +166,7 @@ channel.fetch.suggested_frameworks=true
 
 # Kafka configuration details
 kafka.topics.instruction="{{ kafka_topics_instruction }}"
+kafka.publish.request.topic="{{ kafka_publish_request_topic }}"
 kafka.urls="{{ graphevent_kafka_url }}"
 kafka.topic.system.command="{{ kafka_topic_system_command }}"
 
@@ -240,7 +208,6 @@ installation.id="{{ instance_name }}"
 # Configuration for DIALCode linking
 learning.content.link_dialcode_validation=true
 dialcode.api.search.url="{{ dial_service_search_url }}"
-dialcode.api.authorization="{{ dial_service_authorization }}"
 dialcode.api.generate.url="{{dial_service_generate_url}}"
 
 # Configuration for default channel ID
@@ -286,3 +253,6 @@ content.tagging.property="subject,medium"
 
 # Search Service Config
 kp.search_service.base_url="{{ kp_search_service_base_url }}"
+
+indexHtmlValidation.env=false
+
