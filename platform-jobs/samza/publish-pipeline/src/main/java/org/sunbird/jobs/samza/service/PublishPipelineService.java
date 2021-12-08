@@ -91,7 +91,6 @@ public class PublishPipelineService implements ISamzaService {
 		}
 		Map<String, Object> edata = (Map<String, Object>) message.get(PublishPipelineParams.edata.name());
 		LOGGER.info("Edata :: " + edata);
-
 		Map<String, Object> object = (Map<String, Object>) message.get(PublishPipelineParams.object.name());
 		LOGGER.info("object :: " + object);
 

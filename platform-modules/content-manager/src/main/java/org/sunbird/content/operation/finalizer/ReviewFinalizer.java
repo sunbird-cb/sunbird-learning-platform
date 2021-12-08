@@ -267,6 +267,7 @@ public class ReviewFinalizer extends BaseFinalizer {
 				notPublishedList.add(resource.getIdentifier());
 			}
 		}
+
 		Boolean childPublishEnabled = Platform.config.hasPath("collection.only_published_children") ?
 				Platform.config.getBoolean("collection.only_published_children") : true;
 		if(!childPublishEnabled && CollectionUtils.isNotEmpty(notPublishedList)){

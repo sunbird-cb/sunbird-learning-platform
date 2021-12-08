@@ -49,6 +49,7 @@ public class HttpDownloadUtility {
 	 *            path of the directory to save the file
 	 */
 	public static File downloadFile(String fileURL, String saveDir) {
+
 /*		HttpURLConnection httpConn = null;
 		InputStream inputStream = null;
 		FileOutputStream outputStream = null;*/
@@ -99,10 +100,10 @@ public class HttpDownloadUtility {
 				inputStream.close();
 				File file = new File(saveFilePath);
 				file = Slug.createSlugFile(file);
-				TelemetryManager.log("Sluggified File Name: " + file.getAbsolutePath());
+				TelemetryManager.log("Sluggified File Name: " + file.getAbsolutePath());*/
 
-				return file;
-			} else {
+
+/*			} else {
 				TelemetryManager.log("No file to download. Server replied HTTP code: " + responseCode);
 			}*/
 		} catch (Exception e) {
