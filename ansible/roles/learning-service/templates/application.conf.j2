@@ -1,6 +1,8 @@
 #Platform Configuration
 platform.services=["learning", "language", "config"]
 
+collection.only_published_children=true
+
 # Learning-Service Configuration
 learning.graph_ids=["domain"]
 content.metadata.visibility.parent=["textbookunit", "courseunit", "lessonplanunit"]
@@ -45,6 +47,8 @@ audit.es_conn_info="{{ audit_es_index_host  }}"
 #Assessment Item Configuration 
 assessment.keyspace.name="{{ content_keyspace_name }}"
 assessment.keyspace.table="question_data"
+
+collection.only_published_children=true
 
 # Actor System Configuration
 LearningActorSystem {
@@ -250,3 +254,6 @@ content.tagging.property="subject,medium"
 
 # Search Service Config
 kp.search_service.base_url="{{ kp_search_service_base_url }}"
+
+indexHtmlValidation.env=false
+
