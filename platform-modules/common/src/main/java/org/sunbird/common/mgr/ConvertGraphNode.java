@@ -20,8 +20,12 @@ import org.sunbird.graph.model.node.MetadataDefinition;
 import org.sunbird.graph.model.node.RelationDefinition;
 import org.sunbird.telemetry.logger.TelemetryManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ConvertGraphNode {
-	
+	public static final Logger LOGGER = LoggerFactory.getLogger(ConvertGraphNode.class); 
+    
     public static Map<String, Object> convertGraphNode(Node node, String domainId, DefinitionDTO definition,
             List<String> fieldList) {
         Map<String, Object> map = new HashMap<String, Object>();
@@ -35,7 +39,7 @@ public class ConvertGraphNode {
                         if (fieldList.contains(entry.getKey()))
                         	if (jsonProps.contains(entry.getKey().toLowerCase())) {
                         		Object val = JSONUtils.convertJSONString((String) entry.getValue());
-                        		TelemetryManager.log("JSON Property " + entry.getKey() + " converted value is " + val);
+                        		LOGGER.info("JSON Property " + entry.getKey() + " converted value is " + val);
                                 if (null != val)
                                 	map.put(entry.getKey(), val);
                         	} else 
@@ -51,7 +55,7 @@ public class ConvertGraphNode {
                                 if (val instanceof String) {
                                      val = JSONUtils.convertJSONString((String) entry.getValue());
                                 }
-                            	TelemetryManager.log("JSON Property " + key + " converted value is " + val);
+                            	LOGGER.info("JSON Property " + key + " converted value is " + val);
                                 if (null != val)
                                 	map.put(key, val);
                             } else
