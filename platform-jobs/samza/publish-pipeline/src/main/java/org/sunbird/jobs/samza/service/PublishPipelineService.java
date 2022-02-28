@@ -103,6 +103,12 @@ public class PublishPipelineService implements ISamzaService {
 				Node node = getNode(nodeId);
 				if (null != node) {
 					if (prePublishValidation(node, (Map<String, Object>) edata.get("metadata"))) {
+						boolean isBatchesExist = node.getMetadata().get("batches") != null;
+						if(isBatchesExist) {
+							LOGGER.info("PublishPipelineService:processMessage:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+						} else {
+							LOGGER.info("PublishPipelineService:processMessage:: batches doesn't exist");
+						}
 						LOGGER.info(
 								"Node fetched for publish and content enrichment operation : " + node.getIdentifier());
 						prePublishUpdate(edata, node);
