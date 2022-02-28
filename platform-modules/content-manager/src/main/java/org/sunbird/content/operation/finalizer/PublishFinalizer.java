@@ -11,6 +11,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.sunbird.common.Platform;
 import org.sunbird.common.Slug;
 import org.sunbird.common.dto.Request;
@@ -234,6 +235,8 @@ public class PublishFinalizer extends BaseFinalizer {
 		boolean isBatchesExist = node.getMetadata().get("batches") != null;
 		if(isBatchesExist) {
 			LOGGER.info("PublishFinalizer:finalize:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+			if (node.getMetadata().get("batches").getClass().toString().equalsIgnoreCase("String"))
+				node.getMetadata().put("batches", new JSONObject(node.getMetadata().get("batches")));
 		} else {
 			LOGGER.info("PublishFinalizer:finalize:: batches doesn't exist");
 		}
