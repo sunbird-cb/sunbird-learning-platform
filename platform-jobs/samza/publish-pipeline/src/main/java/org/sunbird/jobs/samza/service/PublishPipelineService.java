@@ -151,7 +151,6 @@ public class PublishPipelineService implements ISamzaService {
 	}
 
 	private void processJob(Map<String, Object> edata, String contentId, JobMetrics metrics, MessageCollector collector) throws Exception {
-
 		Node node = getNode(contentId);
 		String publishType = (String) edata.get(PublishPipelineParams.publish_type.name());
 		node.getMetadata().put(PublishPipelineParams.publish_type.name(), publishType);
@@ -161,6 +160,11 @@ public class PublishPipelineService implements ISamzaService {
 	@SuppressWarnings("unchecked")
 	private void prePublishUpdate(Map<String, Object> edata, Node node) {
 		Map<String, Object> metadata = (Map<String, Object>) edata.get("metadata");
+		LOGGER.info("Number of metaData in eData ? " + metadata.entrySet().size());
+		if(metadata.containsKey("batches")) {
+			LOGGER.info("edata contains 'batches' and adding the same to node.");
+			LOGGER.info("batches type ? " + (metadata.get("batches").getClass()));
+		}
 		node.getMetadata().putAll(metadata);
 
 		String prevState = (String) node.getMetadata().get(ContentWorkflowPipelineParams.status.name());
@@ -183,9 +187,9 @@ public class PublishPipelineService implements ISamzaService {
 			LOGGER.info("Node is not null.");
 			boolean isBatchesExist = node.getMetadata().get("batches") != null;
 			if(isBatchesExist) {
-				LOGGER.info("PublishPipelineService:processMessage:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+				LOGGER.info("PublishPipelineService:getNode:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
 			} else {
-				LOGGER.info("PublishPipelineService:processMessage:: batches doesn't exist");
+				LOGGER.info("PublishPipelineService:getNode:: batches doesn't exist");
 			}
 		} else {
 			LOGGER.info("Node is null.");
