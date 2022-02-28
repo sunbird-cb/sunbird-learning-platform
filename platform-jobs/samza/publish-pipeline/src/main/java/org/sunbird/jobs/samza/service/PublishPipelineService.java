@@ -103,11 +103,11 @@ public class PublishPipelineService implements ISamzaService {
 				Node node = getNode(nodeId);
 				if (null != node) {
 					boolean isBatchesExist = node.getMetadata().get("batches") != null;
-						if(isBatchesExist) {
-							LOGGER.info("PublishPipelineService:processMessage:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
-						} else {
-							LOGGER.info("PublishPipelineService:processMessage:: batches doesn't exist");
-						}
+					if(isBatchesExist) {
+						LOGGER.info("PublishPipelineService:processMessage:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+					} else {
+						LOGGER.info("PublishPipelineService:processMessage:: batches doesn't exist");
+					}
 					if (prePublishValidation(node, (Map<String, Object>) edata.get("metadata"))) {
 						LOGGER.info(
 								"Node fetched for publish and content enrichment operation : " + node.getIdentifier());
@@ -178,6 +178,17 @@ public class PublishPipelineService implements ISamzaService {
 		node = util.getNode(PublishPipelineParams.domain.name(), imgNodeId);
 		if (null == node) {
 			node = util.getNode(PublishPipelineParams.domain.name(), nodeId);
+		}
+		if(node != null) {
+			LOGGER.info("Node is not null.");
+			boolean isBatchesExist = node.getMetadata().get("batches") != null;
+			if(isBatchesExist) {
+				LOGGER.info("PublishPipelineService:processMessage:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+			} else {
+				LOGGER.info("PublishPipelineService:processMessage:: batches doesn't exist");
+			}
+		} else {
+			LOGGER.info("Node is null.");
 		}
 		return node;
 	}
