@@ -232,14 +232,6 @@ public class PublishFinalizer extends BaseFinalizer {
 					ContentErrorMessageConstants.INVALID_CWP_FINALIZE_PARAM + " | [Invalid or null Node.]");
 		
 		LOGGER.info("PublishFinalizer:finalize:: Publish execution for content: " + node.getIdentifier());
-		boolean isBatchesExist = node.getMetadata().get("batches") != null;
-		if(isBatchesExist) {
-			LOGGER.info("PublishFinalizer:finalize:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
-			if (node.getMetadata().get("batches").getClass().toString().equalsIgnoreCase("String"))
-				node.getMetadata().put("batches", new JSONObject(node.getMetadata().get("batches")));
-		} else {
-			LOGGER.info("PublishFinalizer:finalize:: batches doesn't exist");
-		}
 		
 		boolean isContentShallowCopy = false;
 		isContentShallowCopy = isContentShallowCopy(node);
