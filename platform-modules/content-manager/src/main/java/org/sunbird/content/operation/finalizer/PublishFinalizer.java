@@ -11,6 +11,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.sunbird.common.Platform;
 import org.sunbird.common.Slug;
@@ -232,6 +233,12 @@ public class PublishFinalizer extends BaseFinalizer {
 					ContentErrorMessageConstants.INVALID_CWP_FINALIZE_PARAM + " | [Invalid or null Node.]");
 		
 		LOGGER.info("PublishFinalizer:finalize:: Publish execution for content: " + node.getIdentifier());
+
+		boolean isBatchesExist = node.getMetadata().get("batches") != null;
+		if(isBatchesExist &&  (node.getMetadata().get("batches").getClass()).toString().equalsIgnoreCase("String")) {
+			LOGGER.info("PublishFinalizer:finalize:: batches exist, Type ? " + (node.getMetadata().get("batches").getClass()));
+			node.getMetadata().put("batches", new JSONArray(node.getMetadata().get("batches")));
+		}
 		
 		boolean isContentShallowCopy = false;
 		isContentShallowCopy = isContentShallowCopy(node);
