@@ -160,7 +160,7 @@ activity-aggregate-updater:
     activity {
       module.aggs.enabled = true
       input.dedup.enabled = true
-      filter.processed.enrolments = {{ activity_agg_enrolment_filter_processe_enabled | lower }}
+      filter.processed.enrolments = false
       collection.status.cache.expiry = {{ activity_agg_collection_status_cache_expiry_time }}
     }
     service {
@@ -737,7 +737,7 @@ collection-certificate-generator:
       rc.entity = "{{ cert_rc_entity }}"
     }
     enable.suppress.exception = {{ collection_certificate_generator_enable_suppress_exception | lower }}
-    enable.rc.certificate = {{ collection_certificate_generator_enable_rc_certificate | lower }}
+    enable.rc.certificate = false
 
 
   flink-conf: |+
