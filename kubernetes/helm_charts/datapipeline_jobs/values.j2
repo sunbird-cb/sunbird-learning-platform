@@ -858,8 +858,8 @@ content-publish:
         full = ["appIcon", "grayScaleAppIcon", "artifactUrl", "itemSetPreviewUrl", "media"]
       }
 
-      nested.fields=["badgeAssertions", "targets", "badgeAssociations", "plugins", "me_totalTimeSpent", "me_totalPlaySessionCount", "me_totalTimeSpentInSec", "batches", "trackable", "credentials", "discussionForum", "provider", "osMetadata", "actions", "transcripts", "accessibility"]
-
+      nested.fields = ["badgeAssertions", "targets", "badgeAssociations", "plugins", "me_totalTimeSpent", "me_totalPlaySessionCount", "me_totalTimeSpentInSec", "batches", "trackable", "credentials", "discussionForum", "provider", "osMetadata", "actions", "taxonomyPaths_v2", "competencies_v3", "test_competencies_v2","competencies_v2"]
+      restrict.objectTypes = ["EventSet", "Questionnaire", "Misconception", "FrameworkType", "EventSetImage", "EventImage"]
     }
     cloud_storage {
         folder {
@@ -910,7 +910,7 @@ content-publish:
       TextBookUnit: "Textbook Unit"
       Asset: "Certificate Template"
     }
-
+    
     compositesearch.index.name = "compositesearch"
     search.document.type = "cs"
 
