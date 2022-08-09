@@ -268,7 +268,8 @@
             "audio/x-wav",
             "audio/wav",
             "application/json",
-            "application/quiz"
+            "application/quiz",
+            "application/survey"
           ],
           "defaultValue": "application/vnd.ekstep.ecml-archive",
           "renderingHints": "{ 'inputType': 'select',  'order': 9 }",
