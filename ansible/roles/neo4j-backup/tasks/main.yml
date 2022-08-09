@@ -17,11 +17,14 @@
   #become: yes
   #become_user: learning
   command: "{{learner_user_home}}/backup_script.sh"
-  
+ 
+- name: clean up databases dir after upload
+  file: path={{learner_user_home}}/backup/databases state=absent
+
 - name: ls backup directory
   #become: yes
   #become_user: "{{ learner_user }}"
-  command: ls {{learner_user_home}}/backup/neo4j_*
+  command: ls {{learner_user_home}}/backup/
   register: var1
 
 - name: debugging variable
