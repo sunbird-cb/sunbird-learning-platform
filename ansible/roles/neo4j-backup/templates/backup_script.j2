@@ -1,4 +1,4 @@
 #!/bin/sh
 time="$(date '+%Y-%m-%d')"
-cp -rpf {{neo4j_home}}/data/databases /home/learning/backup/
+cp -rpf {{neo4j_home}}/data /home/learning/backup/
 /bin/tar -cvzf /home/learning/backup/neo4j_backup-$time.tar.gz /home/learning/backup/databases
