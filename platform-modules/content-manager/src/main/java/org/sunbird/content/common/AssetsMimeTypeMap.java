@@ -21,6 +21,7 @@ public class AssetsMimeTypeMap {
 		whiteListedMimeType.put("application/json", ContentWorkflowPipelineParams.JSON_FILE.name());
 		whiteListedMimeType.put("application/javascript", ContentWorkflowPipelineParams.JS_FILE.name());
 		whiteListedMimeType.put("application/xml", ContentWorkflowPipelineParams.XML_FILE.name());
+		whiteListedMimeType.put("application/survey", ContentWorkflowPipelineParams.JSON_FILE.name());
 		whiteListedMimeType.put("text/plain", ContentWorkflowPipelineParams.TEXT_FILE.name());
 		whiteListedMimeType.put("text/html", ContentWorkflowPipelineParams.HTML_FILE.name());
 		whiteListedMimeType.put("text/javascript", ContentWorkflowPipelineParams.JS_FILE.name());
