@@ -21,7 +21,7 @@
 - name: ls backup directory
   #become: yes
   #become_user: "{{ learner_user }}"
-  command: ls {{learner_user_home}}/backup/
+  command: ls {{learner_user_home}}/backup/neo4j_*
   register: var1
 
 - name: debugging variable
