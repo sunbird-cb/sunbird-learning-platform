@@ -124,6 +124,11 @@ registry_sunbird_keyspace: "sunbird"
 cert_registry_table: "cert_registry"
 
 
+### Assessment Submit related vars
+assessment-submit_consumer_parallelism: 1
+assessment-submit_parallelism: 1
+assessment-submit_producer_parallelism: 1
+
 ### to be removed
 job_classname: ""
 
@@ -250,6 +255,13 @@ flink_job_names:
     cpu_requests: 0.3
   qrcode-image-generator:
     job_class_name: 'org.sunbird.job.qrimagegenerator.task.QRCodeImageGeneratorTask'
+    replica: 1
+    jobmanager_memory: 1024m
+    taskmanager_memory: 1024m
+    taskslots: 1
+    cpu_requests: 0.3
+  assessment-submit:
+    job_class_name: 'org.sunbird.job.assessmentsubmit.task.AssessmentSubmitStreamTask'
     replica: 1
     jobmanager_memory: 1024m
     taskmanager_memory: 1024m

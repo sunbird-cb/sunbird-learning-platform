@@ -1014,3 +1014,40 @@ qrcode-image-generator:
     parallelism.default: 1
     jobmanager.execution.failover-strategy: region
     taskmanager.memory.network.fraction: 0.1
+
+assessment-submit:
+  assessment-submit: |+
+    include file("/data/flink/conf/base-config.conf")
+    kafka {
+      input.topic = {{ env_name }}.assessment.publish.request
+      post_publish.topic = {{ env_name }}.content.postpublish.request
+      groupId = {{ env_name }}-assessment-publish-group
+    }
+    task {
+      consumer.parallelism = 1
+      parallelism = 1
+      router.parallelism = 1
+    }
+    question {
+      keyspace = "{{ assessment_keyspace_name }}"
+      table = "assessment-_data"
+    }
+    assessment {
+      keyspace = "{{ hierarchy_keyspace_name }}"
+      table = "questionset_hierarchy"
+    }
+    print_service.base_url = "{{ kp_print_service_base_url }}"
+    cloud_storage_type="{{ cloud_store }}"
+    azure_storage_key="{{ sunbird_public_storage_account_name }}"
+    azure_storage_secret="{{ sunbird_public_storage_account_key }}"
+    azure_storage_container="{{ sunbird_content_azure_storage_container }}"
+
+    master.category.validation.enabled ="{{ master_category_validation_enabled }}"
+
+  flink-conf: |+
+    jobmanager.memory.flink.size: {{ flink_job_names['assessment-submit'].jobmanager_memory }}
+    taskmanager.memory.flink.size: {{ flink_job_names['assessment-submit'].taskmanager_memory }}
+    taskmanager.numberOfTaskSlots: {{ flink_job_names['assessment-submit'].taskslots }}
+    parallelism.default: 1
+    jobmanager.execution.failover-strategy: region
+    taskmanager.memory.network.fraction: 0.1
