@@ -142,6 +142,8 @@ public class Neo4jESSyncManager implements ISyncManager {
 					List<Node> nodes = null;
 					try {
 						nodes = util.getNodes(graphId, def.getObjectType(), start, batchSize);
+						System.out.println("\n nodes is empty  '" + nodes.isEmpty() + "'.\n");
+						System.out.println("\n nodes size '" + nodes.size() + "'.\n");
 					}catch(ResourceNotFoundException e) {
 						System.out.println("error while fetching neo4j records for objectType="+objectType+", start="+start+",batchSize="+batchSize);
 						start += batchSize;
@@ -151,6 +153,8 @@ public class Neo4jESSyncManager implements ISyncManager {
 						filterDefinitionNodes(nodes);
 						start += batchSize;
 						Map<String, Object> messages = SyncMessageGenerator.getMessages(nodes, objectType, errors);
+						System.out.println("\n messages is empty  '" + messages.isEmpty() + "'.\n");
+						System.out.println("\n messages size '" + messages.size() + "'.\n");
 						esConnector.bulkImport(messages);
 						completed += batchSize;
 						System.out.println( "");
