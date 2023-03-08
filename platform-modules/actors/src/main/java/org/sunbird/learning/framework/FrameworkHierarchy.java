@@ -59,7 +59,7 @@ public class FrameworkHierarchy extends BaseManager {
 		if (StringUtils.equalsIgnoreCase(node.getObjectType(), "Framework")) {
 			FrameworkCache.delete(id);
 			Map<String, Object> frameworkDocument = new HashMap<>();
-			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, false, true);
+			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, true, true);
 			CategoryCache.setFramework(node.getIdentifier(), frameworkHierarchy);
 
 			frameworkDocument.putAll(frameworkHierarchy);
