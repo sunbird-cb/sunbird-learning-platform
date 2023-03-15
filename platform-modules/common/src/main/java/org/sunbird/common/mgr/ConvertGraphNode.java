@@ -115,6 +115,14 @@ public class ConvertGraphNode {
 							NodeDTO child = new NodeDTO(id, outRel.getEndNodeName(),
 									getDescription(outRel.getEndNodeMetadata()), outRel.getEndNodeObjectType(),
 									outRel.getRelationType(), outRel.getMetadata(), getStatus(outRel.getEndNodeMetadata()));
+                            Map<String,Object> meta = outRel.getMetadata();
+                            Map<String,Object> associationProperties = new HashMap<>();
+                            String status = null;
+                            if (!meta.isEmpty()){
+                                 status =(String) meta.get("approvalStatus");
+                                 associationProperties.put("approvalStatus", status);
+                            }
+                            child.setAssociationProperties(associationProperties);
 							list.add(child);
 						}
                     }

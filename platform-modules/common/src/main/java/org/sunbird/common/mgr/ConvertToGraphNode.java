@@ -70,11 +70,16 @@ public class ConvertToGraphNode {
                             for (Map obj : list) {
                                 NodeDTO dto = (NodeDTO) mapper.convertValue(obj, NodeDTO.class);
                                 Relation relation = new Relation(null, outRelDefMap.get(entry.getKey()), dto.getIdentifier());
+                                Map<String, Object> relMetadata = new HashMap<String, Object>();
                                 if (null != dto.getIndex() && dto.getIndex().intValue() >= 0) {
-                                    Map<String, Object> relMetadata = new HashMap<String, Object>();
                                     relMetadata.put(SystemProperties.IL_SEQUENCE_INDEX.name(), dto.getIndex());
-                                    relation.setMetadata(relMetadata);
                                 }
+                                if ("associations".equalsIgnoreCase(entry.getKey())){
+                                    Map<String, Object> properties = dto.getAssociationProperties();
+                                    String status = (String) properties.get("approvalStatus");
+                                    relMetadata.put("approvalStatus",status);
+                                }
+                                relation.setMetadata(relMetadata);
                                 outRelations.add(relation);
                             }
                         }

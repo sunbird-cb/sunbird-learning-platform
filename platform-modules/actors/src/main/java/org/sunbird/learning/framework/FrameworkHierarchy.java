@@ -72,6 +72,7 @@ public class FrameworkHierarchy extends BaseManager {
 					frameworkDocument.put(field, node.getMetadata().get(field));
 			}
 			hierarchyStore.saveOrUpdateHierarchy(node.getIdentifier(),frameworkDocument);
+			System.out.println("published this framework :: "+node.getIdentifier());
 		} else {
 			throw new ClientException(ResponseCode.CLIENT_ERROR.name(), "The object with given identifier is not a framework: " + id);
 		}
@@ -143,6 +144,10 @@ public class FrameworkHierarchy extends BaseManager {
 							Object indexObj = relMeta.get("IL_SEQUENCE_INDEX");
 							if (indexObj != null)
 								seqIndex = ((Long) indexObj).intValue();
+							if (type.equalsIgnoreCase("associatedTo")) {
+								String associatedProperties = (String) relMeta.get("approvalStatus");
+								data.put("associatedProperties", associatedProperties);
+							}
 						}
 						boolean getChildren = true;
 						// TODO: This condition value should get from definition node.

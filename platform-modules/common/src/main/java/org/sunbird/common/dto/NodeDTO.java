@@ -21,6 +21,7 @@ public class NodeDTO implements Serializable {
 	private String mimeType;
 	private String visibility;
 	private Integer compatibilityLevel;
+	private Map<String, Object> associationProperties;
 
 	public NodeDTO() {
 
@@ -171,6 +172,12 @@ public class NodeDTO implements Serializable {
 	public void setCompatibilityLevel(int compatibilityLevel) {
 		this.compatibilityLevel = compatibilityLevel;
 	}
-	
-	
+
+	public Map<String, Object> getAssociationProperties() {
+		return associationProperties;
+	}
+
+	public void setAssociationProperties(Map<String, Object> associationProperties) {
+		this.associationProperties = associationProperties;
+	}
 }

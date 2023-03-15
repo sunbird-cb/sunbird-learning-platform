@@ -2,6 +2,7 @@ package org.sunbird.graph.model.node;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public class RelationDefinition implements Serializable {
 
@@ -12,6 +13,7 @@ public class RelationDefinition implements Serializable {
     private String description;
     private boolean required;
     private String renderingHints;
+    private Map<String, Object> associationProperteis;
 
     public String getRelationName() {
         return relationName;
@@ -59,5 +61,12 @@ public class RelationDefinition implements Serializable {
 
     public void setRenderingHints(String renderingHints) {
         this.renderingHints = renderingHints;
+    }
+    public Map<String, Object> getAssociationProperteis() {
+        return associationProperteis;
+    }
+
+    public void setAssociationProperteis(Map<String, Object> associationProperteis) {
+        this.associationProperteis = associationProperteis;
     }
 }
