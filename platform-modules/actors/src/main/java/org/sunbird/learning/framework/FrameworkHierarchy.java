@@ -22,12 +22,7 @@ import org.sunbird.graph.model.cache.CategoryCache;
 import org.sunbird.graph.model.node.DefinitionDTO;
 import org.sunbird.learning.hierarchy.store.HierarchyStore;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author pradyumna
@@ -61,10 +56,7 @@ public class FrameworkHierarchy extends BaseManager {
 			Map<String, Object> frameworkDocument = new HashMap<>();
 			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, true, true);
 			CategoryCache.setFramework(node.getIdentifier(), frameworkHierarchy);
-
 			frameworkDocument.putAll(frameworkHierarchy);
-			frameworkDocument.put("identifier", node.getIdentifier());
-			frameworkDocument.put("objectType", node.getObjectType());
 			DefinitionDTO definition = getDefinition(GRAPH_ID, node.getObjectType());
 			String[] fields = getFields(definition);
 			for (String field : fields) {
@@ -150,8 +142,18 @@ public class FrameworkHierarchy extends BaseManager {
 							getChildren = false;
 						}
 						Map<String, Object> childData = getHierarchy(relation.getEndNodeId(), seqIndex, true, getChildren);
-						if (!childData.isEmpty())
+						if (!childData.isEmpty()){
+							if (type.equalsIgnoreCase("associatedTo")){
+								String approvalStatus = (String) relMeta.get("approvalStatus");
+								if (StringUtils.isNotEmpty(approvalStatus) && Objects.nonNull(approvalStatus)){
+									Map<String, Object> associationProperties = new HashMap<>();
+									associationProperties.put("approvalStatus",approvalStatus);
+									childData.put("associationProperties",associationProperties);
+								}
+							}
 							relData.add(childData);
+						}
+
 					}
 				}
 				for (String key : sortKeys) {
@@ -160,7 +162,7 @@ public class FrameworkHierarchy extends BaseManager {
 				}
 			}
 		}
-
+       System.out.println("before returning data to fhiereachy");
 		return data;
 	}
 
