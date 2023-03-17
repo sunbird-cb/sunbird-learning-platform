@@ -22,7 +22,12 @@ import org.sunbird.graph.model.cache.CategoryCache;
 import org.sunbird.graph.model.node.DefinitionDTO;
 import org.sunbird.learning.hierarchy.store.HierarchyStore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author pradyumna
@@ -56,7 +61,10 @@ public class FrameworkHierarchy extends BaseManager {
 			Map<String, Object> frameworkDocument = new HashMap<>();
 			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, true, true);
 			CategoryCache.setFramework(node.getIdentifier(), frameworkHierarchy);
+
 			frameworkDocument.putAll(frameworkHierarchy);
+			frameworkDocument.put("identifier", node.getIdentifier());
+			frameworkDocument.put("objectType", node.getObjectType());
 			DefinitionDTO definition = getDefinition(GRAPH_ID, node.getObjectType());
 			String[] fields = getFields(definition);
 			for (String field : fields) {
@@ -162,7 +170,6 @@ public class FrameworkHierarchy extends BaseManager {
 				}
 			}
 		}
-       System.out.println("before returning data to fhiereachy");
 		return data;
 	}
 
