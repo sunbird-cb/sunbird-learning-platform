@@ -3,8 +3,7 @@ package org.sunbird.common.mgr;
 import java.util.*;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.common.Platform;
 import org.sunbird.common.dto.NodeDTO;
@@ -83,15 +82,11 @@ public class ConvertToGraphNode {
                                 }
                                 if ("associations".equalsIgnoreCase(entry.getKey())) {
                                     if (addPropertiesToGraphRelation.equalsIgnoreCase("true") && Objects.nonNull(relationProperties) && StringUtils.isNotEmpty(relationProperties)) {
-                                        List<Map<String, Object>> properties = mapper.readValue(relationProperties, new TypeReference<List<Map<String, Object>>>() {});
+                                        List<Map<String, Object>> properties = mapper.readValue(relationProperties, List.class);
                                         for (Map<String, Object> property : properties) {
                                             boolean required = (Boolean) property.get("required");
                                             String defaultValue = (String) property.get("defaultValue");
-                                            String status = null;
-                                            List<Map<String, Object>> values = (List<Map<String, Object>>) entry.getValue();
-                                            for (Map<String, Object> value : values){
-                                               status = (String) value.get("approvalStatus");
-                                            }
+                                            String status = (String) obj.get("approvalStatus");
                                             if (required && StringUtils.isNotEmpty(status) && Objects.nonNull(status)){
                                                 relMetadata.put("approvalStatus", status);
                                             } else {
