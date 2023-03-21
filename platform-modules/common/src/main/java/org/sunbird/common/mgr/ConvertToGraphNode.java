@@ -18,11 +18,11 @@ public class ConvertToGraphNode {
 	
 	private static ObjectMapper mapper = new ObjectMapper();
 
-    private static final String addPropertiesToGraphRelation = Platform.config.hasPath("enable.relation.properties")
-            ? Platform.config.getString("enable.relation.properties")
-            : "true";
+    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
+            ? Platform.config.getBoolean("enable.relation.properties")
+            : true;
 
-    private static final String relationProperties = Platform.config.hasPath("additional.relation.properties")
+    private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
             ? Platform.config.getString("additional.relation.properties")
             : "";
 
@@ -80,23 +80,26 @@ public class ConvertToGraphNode {
                                 if (null != dto.getIndex() && dto.getIndex().intValue() >= 0) {
                                     relMetadata.put(SystemProperties.IL_SEQUENCE_INDEX.name(), dto.getIndex());
                                 }
-                                if ("associations".equalsIgnoreCase(entry.getKey())) {
-                                    if (addPropertiesToGraphRelation.equalsIgnoreCase("true") && Objects.nonNull(relationProperties) && StringUtils.isNotEmpty(relationProperties)) {
-                                        List<Map<String, Object>> properties = mapper.readValue(relationProperties, List.class);
+                                if (isAdditionalPropertiesRequired && StringUtils.isNotEmpty(additionalRelationProperties)) {
+                                    if ("associations".equalsIgnoreCase(entry.getKey())) {
+                                        List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
                                         for (Map<String, Object> property : properties) {
+                                            String propertyName = (String) property.get("propertyName");
                                             boolean required = (Boolean) property.get("required");
                                             String defaultValue = (String) property.get("defaultValue");
-                                            String status = (String) obj.get("approvalStatus");
-                                            if (required && StringUtils.isNotEmpty(status) && Objects.nonNull(status)){
-                                                relMetadata.put("approvalStatus", status);
-                                            } else {
-                                                relMetadata.put("approvalStatus", defaultValue);
+                                            String status = (String) obj.get(propertyName);
+                                            if (required) {
+                                                if (StringUtils.isNotEmpty(status)) {
+                                                    relMetadata.put(propertyName, status);
+                                                } else {
+                                                    relMetadata.put(propertyName, defaultValue);
+                                                }
                                             }
                                         }
                                     }
-                                    }
+                                }
 
-                                if (relMetadata.size()>0){
+                                if (relMetadata.size() > 0){
                                     relation.setMetadata(relMetadata);
                                 }
                                 outRelations.add(relation);
