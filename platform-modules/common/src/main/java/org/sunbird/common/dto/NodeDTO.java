@@ -8,7 +8,6 @@ import org.sunbird.graph.dac.enums.SystemProperties;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NodeDTO implements Serializable {
-
 	private static final long serialVersionUID = -3083582629330476187L;
 	private String identifier;
 	private String name;
@@ -21,6 +20,8 @@ public class NodeDTO implements Serializable {
 	private String mimeType;
 	private String visibility;
 	private Integer compatibilityLevel;
+	private Map<String, Object> associationProperties;
+	private String approvalStatus;
 
 	public NodeDTO() {
 
@@ -171,6 +172,21 @@ public class NodeDTO implements Serializable {
 	public void setCompatibilityLevel(int compatibilityLevel) {
 		this.compatibilityLevel = compatibilityLevel;
 	}
-	
+
+	public Map<String, Object> getAssociationProperties() {
+		return associationProperties;
+	}
+
+	public void setAssociationProperties(Map<String, Object> associationProperties) {
+		this.associationProperties = associationProperties;
+	}
+
+	public String getApprovalStatus() {
+		return approvalStatus;
+	}
+
+	public void setApprovalStatus(String approvalStatus) {
+		this.approvalStatus = approvalStatus;
+	}
 	
 }

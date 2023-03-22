@@ -5,6 +5,7 @@ package org.sunbird.learning.framework;
 
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.sunbird.common.Platform;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
@@ -44,8 +45,19 @@ public class FrameworkHierarchy extends BaseManager {
 	private static final String table = Platform.config.hasPath("framework.hierarchy.table")
 			? Platform.config.getString("framework.hierarchy.table")
 			: "framework_hierarchy";
+
+	private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
+			? Platform.config.getBoolean("enable.relation.properties")
+			: true;
+
+	private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
+			? Platform.config.getString("additional.relation.properties")
+			: "";
+
 	private static final String objectType = "Framework";
 	private HierarchyStore hierarchyStore = new HierarchyStore(keyspace, table, objectType, false);
+
+	private static ObjectMapper mapper = new ObjectMapper();
 
 	/**
 	 * @param id
@@ -150,8 +162,25 @@ public class FrameworkHierarchy extends BaseManager {
 							getChildren = false;
 						}
 						Map<String, Object> childData = getHierarchy(relation.getEndNodeId(), seqIndex, true, getChildren);
-						if (!childData.isEmpty())
+						if (!childData.isEmpty()) {
+							if (isAdditionalPropertiesRequired) {
+								if (type.equalsIgnoreCase("associatedTo")){
+									if (StringUtils.isNotEmpty(additionalRelationProperties)){
+										List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
+										for (Map property : properties) {
+											String approvalStatus = (String) relMeta.get((String) property.get("propertyName"));
+											if (StringUtils.isNotEmpty(approvalStatus)) {
+												Map<String, Object> associationProperties = new HashMap<>();
+												associationProperties.put((String) property.get("propertyName"),approvalStatus);
+												childData.put("associationProperties",associationProperties);
+											}
+										}
+									}
+								}
+							}
 							relData.add(childData);
+						}
+
 					}
 				}
 				for (String key : sortKeys) {
