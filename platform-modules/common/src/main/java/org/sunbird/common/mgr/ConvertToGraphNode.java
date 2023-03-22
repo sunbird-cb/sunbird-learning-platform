@@ -1,13 +1,11 @@
 package org.sunbird.common.mgr;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.sunbird.common.Platform;
 import org.sunbird.common.dto.NodeDTO;
 import org.sunbird.graph.dac.enums.SystemProperties;
 import org.sunbird.graph.dac.model.Node;
@@ -19,6 +17,14 @@ import org.sunbird.telemetry.logger.TelemetryManager;
 public class ConvertToGraphNode {
 	
 	private static ObjectMapper mapper = new ObjectMapper();
+
+    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
+            ? Platform.config.getBoolean("enable.relation.properties")
+            : true;
+
+    private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
+            ? Platform.config.getString("additional.relation.properties")
+            : "";
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Node convertToGraphNode(Map<String, Object> map, DefinitionDTO definition, Node graphNode) throws Exception {
@@ -70,9 +76,30 @@ public class ConvertToGraphNode {
                             for (Map obj : list) {
                                 NodeDTO dto = (NodeDTO) mapper.convertValue(obj, NodeDTO.class);
                                 Relation relation = new Relation(null, outRelDefMap.get(entry.getKey()), dto.getIdentifier());
+                                Map<String, Object> relMetadata = new HashMap<String, Object>();
                                 if (null != dto.getIndex() && dto.getIndex().intValue() >= 0) {
-                                    Map<String, Object> relMetadata = new HashMap<String, Object>();
                                     relMetadata.put(SystemProperties.IL_SEQUENCE_INDEX.name(), dto.getIndex());
+                                }
+                                if (isAdditionalPropertiesRequired && StringUtils.isNotEmpty(additionalRelationProperties)) {
+                                    if ("associations".equalsIgnoreCase(entry.getKey())) {
+                                        List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
+                                        for (Map<String, Object> property : properties) {
+                                            String propertyName = (String) property.get("propertyName");
+                                            boolean required = (Boolean) property.get("required");
+                                            String defaultValue = (String) property.get("defaultValue");
+                                            String status = (String) obj.get(propertyName);
+                                            if (required) {
+                                                if (StringUtils.isNotEmpty(status)) {
+                                                    relMetadata.put(propertyName, status);
+                                                } else {
+                                                    relMetadata.put(propertyName, defaultValue);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (relMetadata.size() > 0){
                                     relation.setMetadata(relMetadata);
                                 }
                                 outRelations.add(relation);
