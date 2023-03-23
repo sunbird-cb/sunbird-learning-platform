@@ -13,6 +13,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sunbird.common.Platform;
+import org.sunbird.common.constants.Constants;
 import org.sunbird.common.dto.NodeDTO;
 import org.sunbird.graph.common.JSONUtils;
 import org.sunbird.graph.dac.enums.GraphDACParams;
@@ -25,12 +26,12 @@ import org.sunbird.telemetry.logger.TelemetryManager;
 
 public class ConvertGraphNode {
 
-    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
-            ? Platform.config.getBoolean("enable.relation.properties")
-            : true;
+    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath(Constants.ENABLE_RELATION_PROPERTIES)
+            ? Platform.config.getBoolean(Constants.ENABLE_RELATION_PROPERTIES)
+            : false;
 
-    private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
-            ? Platform.config.getString("additional.relation.properties")
+    private static final String additionalRelationProperties = Platform.config.hasPath(Constants.ADDITIONAL_RELATION_PROPERTIES)
+            ? Platform.config.getString(Constants.ADDITIONAL_RELATION_PROPERTIES)
             : "";
 
     private static ObjectMapper mapper = new ObjectMapper();
@@ -133,9 +134,9 @@ public class ConvertGraphNode {
                                 try {
                                     List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
                                     for (Map property : properties) {
-                                        String status = (String) outRelMetadata.get((String) property.get("propertyName"));
+                                        String status = (String) outRelMetadata.get((String) property.get(Constants.PROPERTY_NAME));
                                         Map<String, Object> associationProperties = new HashMap<>();
-                                        associationProperties.put((String) property.get("propertyName"),status);
+                                        associationProperties.put((String) property.get(Constants.PROPERTY_NAME),status);
                                         child.setAssociationProperties(associationProperties);
                                     }
                                     list.add(child);

@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sunbird.common.Platform;
+import org.sunbird.common.constants.Constants;
 import org.sunbird.common.dto.NodeDTO;
 import org.sunbird.graph.dac.enums.SystemProperties;
 import org.sunbird.graph.dac.model.Node;
@@ -19,12 +20,12 @@ import org.sunbird.telemetry.logger.TelemetryManager;
 
 public class ConvertToGraphNode {
 
-    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
-            ? Platform.config.getBoolean("enable.relation.properties")
-            : true;
+    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath(Constants.ENABLE_RELATION_PROPERTIES)
+            ? Platform.config.getBoolean(Constants.ENABLE_RELATION_PROPERTIES)
+            : false;
 
-    private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
-            ? Platform.config.getString("additional.relation.properties")
+    private static final String additionalRelationProperties = Platform.config.hasPath(Constants.ADDITIONAL_RELATION_PROPERTIES)
+            ? Platform.config.getString(Constants.ADDITIONAL_RELATION_PROPERTIES)
             : "";
 
 	private static ObjectMapper mapper = new ObjectMapper();
@@ -84,12 +85,12 @@ public class ConvertToGraphNode {
                                     relMetadata.put(SystemProperties.IL_SEQUENCE_INDEX.name(), dto.getIndex());
                                 }
                                 if (isAdditionalPropertiesRequired && StringUtils.isNotEmpty(additionalRelationProperties)) {
-                                    if ("associations".equalsIgnoreCase(entry.getKey())) {
+                                    if (Constants.ASSOCIATIONS.equalsIgnoreCase(entry.getKey())) {
                                         List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
                                         for (Map<String, Object> property : properties) {
-                                            String propertyName = (String) property.get("propertyName");
-                                            boolean required = (Boolean) property.get("required");
-                                            String defaultValue = (String) property.get("defaultValue");
+                                            String propertyName = (String) property.get(Constants.PROPERTY_NAME);
+                                            boolean required = (Boolean) property.get(Constants.REQUIRED);
+                                            String defaultValue = (String) property.get(Constants.DEFAULT_VALUE);
                                             String status = (String) obj.get(propertyName);
                                             if (required) {
                                                 if (StringUtils.isNotEmpty(status)) {

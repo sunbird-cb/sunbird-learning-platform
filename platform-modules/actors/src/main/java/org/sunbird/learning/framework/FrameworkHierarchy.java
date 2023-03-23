@@ -7,6 +7,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sunbird.common.Platform;
+import org.sunbird.common.constants.Constants;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
 import org.sunbird.common.exception.ClientException;
@@ -46,12 +47,12 @@ public class FrameworkHierarchy extends BaseManager {
 			? Platform.config.getString("framework.hierarchy.table")
 			: "framework_hierarchy";
 
-	private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath("enable.relation.properties")
-			? Platform.config.getBoolean("enable.relation.properties")
-			: true;
+	private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath(Constants.ENABLE_RELATION_PROPERTIES)
+			? Platform.config.getBoolean(Constants.ENABLE_RELATION_PROPERTIES)
+			: false;
 
-	private static final String additionalRelationProperties = Platform.config.hasPath("additional.relation.properties")
-			? Platform.config.getString("additional.relation.properties")
+	private static final String additionalRelationProperties = Platform.config.hasPath(Constants.ADDITIONAL_RELATION_PROPERTIES)
+			? Platform.config.getString(Constants.ADDITIONAL_RELATION_PROPERTIES)
 			: "";
 
 	private static final String objectType = "Framework";
@@ -164,15 +165,15 @@ public class FrameworkHierarchy extends BaseManager {
 						Map<String, Object> childData = getHierarchy(relation.getEndNodeId(), seqIndex, true, getChildren);
 						if (!childData.isEmpty()) {
 							if (isAdditionalPropertiesRequired) {
-								if (type.equalsIgnoreCase("associatedTo")){
+								if (type.equalsIgnoreCase(Constants.ASSOCIATED_TO)){
 									if (StringUtils.isNotEmpty(additionalRelationProperties)){
 										List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
 										for (Map property : properties) {
-											String approvalStatus = (String) relMeta.get((String) property.get("propertyName"));
+											String approvalStatus = (String) relMeta.get((String) property.get(Constants.PROPERTY_NAME));
 											if (StringUtils.isNotEmpty(approvalStatus)) {
 												Map<String, Object> associationProperties = new HashMap<>();
-												associationProperties.put((String) property.get("propertyName"),approvalStatus);
-												childData.put("associationProperties",associationProperties);
+												associationProperties.put((String) property.get(Constants.PROPERTY_NAME),approvalStatus);
+												childData.put(Constants.ASSOCIATION_PROPERTIES,associationProperties);
 											}
 										}
 									}
