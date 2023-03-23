@@ -1,5 +1,6 @@
 package org.sunbird.common.mgr;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +11,9 @@ import java.util.function.Predicate;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.sunbird.common.Platform;
+import org.sunbird.common.constants.Constants;
 import org.sunbird.common.dto.NodeDTO;
 import org.sunbird.graph.common.JSONUtils;
 import org.sunbird.graph.dac.enums.GraphDACParams;
@@ -21,7 +25,17 @@ import org.sunbird.graph.model.node.RelationDefinition;
 import org.sunbird.telemetry.logger.TelemetryManager;
 
 public class ConvertGraphNode {
-	
+
+
+    private static final Boolean isAdditionalPropertiesRequired = Platform.config.hasPath(Constants.ENABLE_RELATION_PROPERTIES)
+            ? Platform.config.getBoolean(Constants.ENABLE_RELATION_PROPERTIES)
+            : false;
+
+    private static final String additionalRelationProperties = Platform.config.hasPath(Constants.ADDITIONAL_RELATION_PROPERTIES)
+            ? Platform.config.getString(Constants.ADDITIONAL_RELATION_PROPERTIES)
+            : "";
+
+    private static ObjectMapper mapper = new ObjectMapper();
     public static Map<String, Object> convertGraphNode(Node node, String domainId, DefinitionDTO definition,
             List<String> fieldList) {
         Map<String, Object> map = new HashMap<String, Object>();
@@ -115,7 +129,23 @@ public class ConvertGraphNode {
 							NodeDTO child = new NodeDTO(id, outRel.getEndNodeName(),
 									getDescription(outRel.getEndNodeMetadata()), outRel.getEndNodeObjectType(),
 									outRel.getRelationType(), outRel.getMetadata(), getStatus(outRel.getEndNodeMetadata()));
-							list.add(child);
+                            Map<String, Object> outRelMetadata = outRel.getMetadata();
+                            if (isAdditionalPropertiesRequired) {
+                                try {
+                                    List<Map<String, Object>> properties = mapper.readValue(additionalRelationProperties, List.class);
+                                    for (Map property : properties) {
+                                        String status = (String) outRelMetadata.get((String) property.get(Constants.PROPERTY_NAME));
+                                        Map<String, Object> associationProperties = new HashMap<>();
+                                        associationProperties.put((String) property.get(Constants.PROPERTY_NAME),status);
+                                        child.setAssociationProperties(associationProperties);
+                                    }
+                                    list.add(child);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            } else {
+                                list.add(child);
+                            }
 						}
                     }
                 }
