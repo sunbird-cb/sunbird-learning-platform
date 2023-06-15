@@ -454,8 +454,8 @@ public class ContentValidator {
 					break;
 
 				case "application/offline":
-						isValid = true;
-						break;
+					isValid = true;
+					break;
 
 				case "assets":
 					isValid = true;
