@@ -365,6 +365,11 @@ public abstract class BaseContentManager extends BaseManager {
                 if(checkError(imageUpdateResponse) || null == updateResponse)
                     return imageUpdateResponse;
             }
+
+            //Clear redis cache after update is successful.
+            TelemetryManager.info("Update is successful for ID: " + originalId + ", Cache is cleared.");
+            clearRedisCache(originalId);
+
             return updateResponse;
         }
     }

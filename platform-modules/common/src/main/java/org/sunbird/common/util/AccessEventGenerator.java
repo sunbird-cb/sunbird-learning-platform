@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sunbird.common.dto.HeaderParam;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
+import org.sunbird.telemetry.logger.TelemetryManager;
 import org.sunbird.telemetry.util.TelemetryAccessEventUtil;
 
 import java.io.IOException;
@@ -56,6 +57,11 @@ public class AccessEventGenerator extends TelemetryAccessEventUtil {
 			data.put("X-Authenticated-Userid", requestWrapper.getHeader("X-Authenticated-Userid"));
 			writeTelemetryEventLog(data);
 		} catch (IOException e) {
+			try {
+				TelemetryManager.info(String.format("Failed to process Event. exception: %s, received data: %s",
+						e.getMessage(), mapper.writeValueAsString(requestWrapper)));
+			} catch (Exception err) {
+			}
 			e.printStackTrace();
 		}
 	}
