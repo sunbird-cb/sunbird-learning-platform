@@ -44,7 +44,7 @@ public class RetireOperation extends BaseContentManager {
      */
     public Response retire(String contentId) {
         Boolean isImageNodeExist = false;
-        if (StringUtils.isBlank(contentId) || StringUtils.endsWithIgnoreCase(contentId, DEFAULT_CONTENT_IMAGE_OBJECT_SUFFIX))
+        if (StringUtils.isBlank(contentId))
             throw new ClientException(ContentErrorCodes.ERR_INVALID_CONTENT_ID.name(),
                     "Please Provide Valid Content Identifier.");
 
