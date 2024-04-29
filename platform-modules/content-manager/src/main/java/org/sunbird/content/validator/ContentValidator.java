@@ -195,7 +195,7 @@ public class ContentValidator {
 							+ " | [Something went wrong while validating Content Node.",
 					e);
 		}
-		TelemetryManager.log("Is it a valid Content Node ? : " + isValidContentNode);
+		TelemetryManager.info("Is it a valid Content Node ? : " + isValidContentNode);
 		return isValidContentNode;
 	}
 
@@ -469,6 +469,7 @@ public class ContentValidator {
 				}
 			}
 		}
+		TelemetryManager.info("ContentValidator::isAllRequiredFieldsAvailable:: returns " + isValid);
 		return isValid;
 	}
 

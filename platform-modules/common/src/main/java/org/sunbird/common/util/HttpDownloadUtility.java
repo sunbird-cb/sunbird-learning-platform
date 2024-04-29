@@ -36,7 +36,12 @@ public class HttpDownloadUtility {
 	 */
 	public static File downloadFile(String fileURL, String saveDir) {
 		try {
-			System.out.println("http utility called.........");
+			System.out.println("http utility called......... " + fileURL);
+			try {
+				throw new Exception("Exception to identify trace call of methods...");
+			} catch(Exception e1) {
+				e1.printStackTrace();
+			}
 			return download(fileURL, false);
 		} catch (Exception e) {
 			e.printStackTrace();
