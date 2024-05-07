@@ -35,7 +35,7 @@
 - name: Copy trustStoreCerts file
   become: yes
   become_user: "{{learner_user}}"
-  template: src=trustStoreCerts.j2 dest=/data/properties/trustStoreCerts mode=755 owner={{ learner_user }} group={{ learner_group }}
+  copy: src=trustStoreCerts dest=/data/properties/trustStoreCerts mode=755 owner={{ learner_user }} group={{ learner_group }}
 
 - name: Delete existing artifact file from tomcat webapps folder
   become: yes
