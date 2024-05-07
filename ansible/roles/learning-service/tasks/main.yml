@@ -20,10 +20,22 @@
   become_user: "{{learner_user}}"
   file: name=/data/properties/application.conf state=absent
 
+- name: add templates for learning
+  become: yes
+  become_user: "{{learner_user}}"
+  template: src={{ item.name }} dest={{ item.destination }}
+  with_items:
+    - { name: 'catalina.j2', destination: '{{ tomcat_home }}/bin/catalina.sh' }
+
 - name: Copy application.conf file
   become: yes
   become_user: "{{learner_user}}"
   template: src=application.conf.j2 dest=/data/properties/application.conf mode=755 owner={{ learner_user }} group={{ learner_group }}
+
+- name: Copy trustStoreCerts file
+  become: yes
+  become_user: "{{learner_user}}"
+  template: src=trustStoreCerts.j2 dest=/data/properties/trustStoreCerts mode=755 owner={{ learner_user }} group={{ learner_group }}
 
 - name: Delete existing artifact file from tomcat webapps folder
   become: yes
