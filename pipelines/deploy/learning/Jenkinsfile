@@ -27,7 +27,7 @@ node() {
                 }
                 stage('deploy artifact') {
                     sh """
-                       unzip ${artifact}
+                       unzip -o ${artifact}
                        mv learning-service.war ansible
                     """
 
