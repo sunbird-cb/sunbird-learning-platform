@@ -20,6 +20,7 @@ public class AssetsMimeTypeMap {
 		whiteListedMimeType.put("application/octet-stream", ContentWorkflowPipelineParams.Content_Package.name());
 		whiteListedMimeType.put("application/json", ContentWorkflowPipelineParams.JSON_FILE.name());
 		whiteListedMimeType.put("application/javascript", ContentWorkflowPipelineParams.JS_FILE.name());
+		whiteListedMimeType.put("application/offline", ContentWorkflowPipelineParams.offline.name());
 		whiteListedMimeType.put("application/xml", ContentWorkflowPipelineParams.XML_FILE.name());
 		whiteListedMimeType.put("application/survey", ContentWorkflowPipelineParams.JSON_FILE.name());
 		whiteListedMimeType.put("text/plain", ContentWorkflowPipelineParams.TEXT_FILE.name());
