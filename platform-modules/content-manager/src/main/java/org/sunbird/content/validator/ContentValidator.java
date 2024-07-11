@@ -405,6 +405,15 @@ public class ContentValidator {
 						else
 							isValid = true;
 							break;
+				case "external/redirect":
+					if (StringUtils.isBlank(
+							(String) node.getMetadata().get(ContentWorkflowPipelineParams.artifactUrl.name())))
+							throw new ClientException(ContentErrorCodes.INVALID_ARTIFACT.name(),
+									ContentErrorMessageConstants.INVALID_URL,
+									" | [Invalid or 'null' operation.] Publish Operation Failed");
+						else
+							isValid = true;
+							break;		
 
 				case "application/pdf":
 					if (StringUtils.isNotBlank(
