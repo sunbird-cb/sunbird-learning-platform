@@ -3,6 +3,7 @@
  */
 package org.sunbird.learning.framework;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.common.Platform;
@@ -21,13 +22,9 @@ import org.sunbird.graph.engine.router.GraphEngineManagers;
 import org.sunbird.graph.model.cache.CategoryCache;
 import org.sunbird.graph.model.node.DefinitionDTO;
 import org.sunbird.learning.hierarchy.store.HierarchyStore;
+import org.sunbird.telemetry.logger.TelemetryManager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author pradyumna
@@ -46,7 +43,11 @@ public class FrameworkHierarchy extends BaseManager {
 			: "framework_hierarchy";
 	private static final String objectType = "Framework";
 	private HierarchyStore hierarchyStore = new HierarchyStore(keyspace, table, objectType, false);
-
+	private ObjectMapper mapper = new ObjectMapper();
+	private static final String term = "Term";
+	private static final String additionalProperties  = "additionalProperties";
+	private static final String refId = "refId";
+	private static final String refType = "refType";
 	/**
 	 * @param id
 	 * @throws Exception
@@ -117,7 +118,23 @@ public class FrameworkHierarchy extends BaseManager {
 				}
 				data.put("identifier", node.getIdentifier());
 				data.put("index", index);
-
+				if (objectType.equalsIgnoreCase(term)) {
+					TelemetryManager.info("definition field  term check::: "+ Arrays.toString(fields) +","+node.getMetadata());
+					Map<String, Object> nodeMetadata = node.getMetadata();
+					if (nodeMetadata.containsKey(additionalProperties)) {
+						String morePropertiesJson = (String) metadata.get(additionalProperties);
+						Map<String, Object> additionalPropertiesMap = mapper.readValue(morePropertiesJson, Map.class);
+						TelemetryManager.info("additionalProperties map :: "+additionalPropertiesMap);
+						data.put(additionalProperties,additionalPropertiesMap);
+						TelemetryManager.info("after adding additionalProperties to map::: "+data);
+					}
+					if (nodeMetadata.containsKey(refId)) {
+						data.put(refId,(String) nodeMetadata.get(refId));
+					}
+					if (nodeMetadata.containsKey(refType)) {
+						data.put(refType,(String) nodeMetadata.get(refType));
+					}
+				}
 			}
 			if (includeRelations) {
 				Map<String, String> inRelDefMap = new HashMap<>();
