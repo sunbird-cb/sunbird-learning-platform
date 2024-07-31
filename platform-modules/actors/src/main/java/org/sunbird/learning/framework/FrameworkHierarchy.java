@@ -61,6 +61,7 @@ public class FrameworkHierarchy extends BaseManager {
 			FrameworkCache.delete(id);
 			Map<String, Object> frameworkDocument = new HashMap<>();
 			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, false, true);
+			TelemetryManager.info("frameworkHierarchy map::: "+frameworkHierarchy);
 			CategoryCache.setFramework(node.getIdentifier(), frameworkHierarchy);
 
 			frameworkDocument.putAll(frameworkHierarchy);
@@ -101,7 +102,8 @@ public class FrameworkHierarchy extends BaseManager {
 			throw new ResourceNotFoundException("ERR_DATA_NOT_FOUND", "Data not found with id : " + id,
 					ResponseCode.RESOURCE_NOT_FOUND);
 		Node node = (Node) responseNode.get(GraphDACParams.node.name());
-
+		String nodeName = (String) node.getMetadata().getOrDefault("code","");
+		TelemetryManager.info("Processing node ID :: "+nodeName);
 		Map<String, Object> metadata = node.getMetadata();
 		String status = (String) metadata.get("status");
 		if (StringUtils.equalsIgnoreCase("Live", status)) {
@@ -143,6 +145,7 @@ public class FrameworkHierarchy extends BaseManager {
 				ConvertGraphNode.getRelationDefinitionMaps(definition, inRelDefMap, outRelDefMap);
 				List<Relation> outRelations = node.getOutRelations();
 				if (null != outRelations && !outRelations.isEmpty()) {
+					TelemetryManager.info("Node (ID: " + id + ") has " + outRelations.size() + " outgoing relations.");
 					for (Relation relation : outRelations) {
 						String type = relation.getRelationType();
 						String key = type + relation.getEndNodeObjectType();
@@ -151,6 +154,8 @@ public class FrameworkHierarchy extends BaseManager {
 						if (relData == null) {
 							relData = new ArrayList<Map<String, Object>>();
 							data.put(title, relData);
+							TelemetryManager.info("Node " + nodeName + " (ID: " + id + ") has outgoing relation to node " +
+									relation.getEndNodeId() + " with type " + relation.getRelationType());
 							if ("hasSequenceMember".equalsIgnoreCase(type))
 								sortKeys.add(title);
 						}
@@ -177,7 +182,8 @@ public class FrameworkHierarchy extends BaseManager {
 				}
 			}
 		}
-
+		String jsonData = mapper.writeValueAsString(data);
+		TelemetryManager.info("printing Hierarchy data: "+jsonData);
 		return data;
 	}
 
