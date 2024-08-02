@@ -20,6 +20,7 @@ import org.sunbird.graph.dac.enums.GraphDACParams;
 import org.sunbird.graph.dac.model.Node;
 import org.sunbird.graph.dac.model.Relation;
 import org.springframework.stereotype.Component;
+import org.sunbird.telemetry.logger.TelemetryManager;
 
 /**
  * @author pradyumna
@@ -36,6 +37,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 	@SuppressWarnings("unchecked")
 	@Override
 	public Response createTerm(String scopeId, String category, Request req) throws Exception {
+		TelemetryManager.info("frameworkTermCreate function started ::: ");
 		List<Map<String, Object>> requestList = getRequestData(req);
 		if (null == req.get(TermEnum.term.name()) || null == requestList || requestList.isEmpty())
 			throw new ClientException("ERR_INVALID_TERM_OBJECT", "Invalid Request");
@@ -53,7 +55,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 		} else {
 			validateCategoryId(categoryId);
 		}
-
+		TelemetryManager.info("frameworkTermCreate function categoryId:::"+categoryId);
 		int codeError = 0;
 		int serverError = 0;
 		String id = null;
@@ -79,6 +81,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 					identifiers.add((String) resp.getResult().get("node_id"));
 				} else {
 					if ((StringUtils.equalsIgnoreCase("CONSTRAINT_VALIDATION_FAILED", resp.getParams().getErr()))) {
+						TelemetryManager.info("frameworkTermCreate function CONSTRAINT_VALIDATION_FAILED:::"+resp.getParams().getErr());
 						codeError += 1;
 					} else {
 						serverError += 1;
@@ -89,6 +92,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 				codeError += 1;
 			}
 		}
+		TelemetryManager.info("frameworkTermCreate function (codeError: " + codeError + ") has serverError: " + serverError + " identifiers "+identifiers +"requestsize "+requestList.size());
 		return createResponse(codeError, serverError, identifiers, requestList.size());
 	}
 
