@@ -55,7 +55,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 		} else {
 			validateCategoryId(categoryId);
 		}
-		TelemetryManager.info("frameworkTermCreate function categoryId:::"+categoryId);
+		TelemetryManager.info("frameworkTermCreate function categoryId::: "+categoryId);
 		int codeError = 0;
 		int serverError = 0;
 		String id = null;
