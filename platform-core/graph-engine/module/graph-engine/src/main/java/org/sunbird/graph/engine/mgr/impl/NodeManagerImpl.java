@@ -36,6 +36,7 @@ import akka.actor.ActorRef;
 import akka.dispatch.Futures;
 import akka.dispatch.OnComplete;
 import akka.dispatch.OnSuccess;
+import org.sunbird.telemetry.logger.TelemetryManager;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 
@@ -140,17 +141,22 @@ public class NodeManagerImpl extends BaseGraphManager implements INodeManager {
 	 */
 	@Override
 	public void createDataNode(final Request request) {
+		TelemetryManager.log("createDataNode function started: " );
 		String graphId = (String) request.getContext().get(GraphHeaderParams.graph_id.name());
 		final ActorRef parent = getSender();
 		final Node node = (Node) request.get(GraphDACParams.node.name());
+		TelemetryManager.log("createDataNode function node: " +node);
 		Boolean skipValidations = (Boolean) request.get(GraphDACParams.skip_validations.name());
 		if (!validateRequired(node)) {
+			TelemetryManager.log("createDataNode Required parameters are missing...: " +node);
 			throw new ClientException(GraphEngineErrorCodes.ERR_GRAPH_ADD_NODE_MISSING_REQ_PARAMS.name(),
 					"Required parameters are missing...");
 		} else {
+			TelemetryManager.log("createDataNode function skipValidations: " +skipValidations);
 			try {
 				if (null == skipValidations)
 					skipValidations = false;
+				TelemetryManager.log("createDataNode function skipValidations null: " +skipValidations);
 				final DataNode datanode = new DataNode(this, graphId, node);
 				final ExecutionContext ec = getContext().dispatcher();
 				final List<String> messages = new ArrayList<String>();
@@ -178,10 +184,12 @@ public class NodeManagerImpl extends BaseGraphManager implements INodeManager {
 						updateRelations(parent, node, datanode, request, ec, addRels, null);
 					}
 				} else {
+					TelemetryManager.log("createDataNode function Validation Errors: " +messages);
 					ERROR(GraphEngineErrorCodes.ERR_GRAPH_ADD_NODE_VALIDATION_FAILED.name(), "Validation Errors",
 							ResponseCode.CLIENT_ERROR, GraphDACParams.messages.name(), messages, parent);
 				}
 			} catch (Exception e) {
+				TelemetryManager.error("createDataNode function Errors: ", e);
 				handleException(e, getSender());
 			}
 		}

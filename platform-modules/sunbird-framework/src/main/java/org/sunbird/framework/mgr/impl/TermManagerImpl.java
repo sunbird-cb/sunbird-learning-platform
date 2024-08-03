@@ -64,7 +64,9 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 		for (Map<String, Object> request : requestList) {
 			String code = (String) request.get(TermEnum.code.name());
 			if (StringUtils.isNotBlank(code)) {
+				TelemetryManager.info("frameworkTermCreate function categoryId::: "+categoryId);
 				id = generateIdentifier(categoryId, code);
+				TelemetryManager.info("frameworkTermCreate function id::: "+id);
 				if (null != id)
 					request.put(TermEnum.identifier.name(), id);
 				else {
@@ -76,6 +78,7 @@ public class TermManagerImpl extends BaseFrameworkManager implements ITermManage
 						|| ((List<Object>) request.get(TermEnum.parents.name())).isEmpty())
 					setRelations(categoryId, request);
 				request.put("category", category);
+				TelemetryManager.info("frameworkTermCreate function request::: "+request);
 				Response resp = create(request, TERM_OBJECT_TYPE);
 				if (!checkError(resp)) {
 					identifiers.add((String) resp.getResult().get("node_id"));

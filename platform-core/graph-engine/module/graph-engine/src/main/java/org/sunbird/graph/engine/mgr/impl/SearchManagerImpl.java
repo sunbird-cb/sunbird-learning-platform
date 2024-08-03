@@ -30,6 +30,7 @@ import org.sunbird.graph.model.Graph;
 import org.neo4j.graphdb.Direction;
 
 import akka.actor.ActorRef;
+import org.sunbird.telemetry.logger.TelemetryManager;
 
 public class SearchManagerImpl extends BaseGraphManager implements ISearchManager {
 
@@ -72,8 +73,10 @@ public class SearchManagerImpl extends BaseGraphManager implements ISearchManage
             try {
                 Graph graph = new Graph(this, graphId);
                 graph.getDefinitionNode(request);
+                TelemetryManager.info("getNodeDefinition function completed "+graph);
             } catch (Exception e) {
 //            	handleException(e, getSender());
+                TelemetryManager.error("getNodeDefinition error ", e);
             	throw new ServerException("Something went wrong while fetching definition" , e.getMessage());
                
             }

@@ -66,10 +66,12 @@ public class BaseFrameworkManager extends BaseManager {
 	protected Response create(Map<String, Object> request, String objectType) {
 		if (request.containsKey("translations"))
 			validateTranslation(request);
-		
+		TelemetryManager.info("frameworkTermCreate function create:::");
 		DefinitionDTO definition = getDefinition(GRAPH_ID, objectType);
 		try {
+			TelemetryManager.info("frameworkTermCreate function DefinitionDTO:::");
 			Node node = ConvertToGraphNode.convertToGraphNode(request, definition, null);
+			TelemetryManager.info("frameworkTermCreate function node:::"+node);
 			node.setObjectType(objectType);
 			node.setGraphId(GRAPH_ID);
 			Response response = createDataNode(node);
@@ -78,6 +80,7 @@ public class BaseFrameworkManager extends BaseManager {
 			else
 				return response;
 		} catch (Exception e) {
+			TelemetryManager.error("frameworkTermCreate function exception::: ", e);
 			return ERROR("ERR_SERVER_ERROR", "Internal Server Error", ResponseCode.SERVER_ERROR);
 		}
 	}
