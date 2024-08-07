@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.dto.Property;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.exception.ClientException;
@@ -102,6 +103,9 @@ public class SearchManagerImpl extends BaseGraphManager implements ISearchManage
 
     @Override
     public void getDataNode(Request request) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        TelemetryManager.log("SearchManagerImpl getDataNode function started");
         String nodeId = (String) request.get(GraphDACParams.node_id.name());
         if (!validateRequired(nodeId)) {
             throw new ClientException(GraphEngineErrorCodes.ERR_GRAPH_SEARCH_MISSING_REQ_PARAMS.name(),
@@ -115,6 +119,9 @@ public class SearchManagerImpl extends BaseGraphManager implements ISearchManage
                 handleException(e, getSender());
             }
         }
+        stopWatch.stop();
+        long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+        TelemetryManager.log("SearchManagerImpl getDataNode function completed in " + durationInSeconds + " seconds");
     }
 
     @SuppressWarnings("unchecked")

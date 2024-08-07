@@ -3,6 +3,7 @@ package org.sunbird.graph.service.util;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.dto.Property;
 import org.sunbird.graph.dac.enums.GraphDACParams;
 import org.sunbird.graph.dac.enums.SystemProperties;
@@ -38,7 +39,9 @@ public class SearchQueryGenerationUtil {
 	}
 
 	public static String generateGetNodeByUniqueIdCypherQuery(Map<String, Object> parameterMap) {
-
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		TelemetryManager.log("SearchQueryGenerationUtil generateGetNodeByUniqueIdCypherQuery function started");
 		StringBuilder query = new StringBuilder();
 		if (null != parameterMap) {
 			String graphId = (String) parameterMap.get(GraphDACParams.graphId.name());
@@ -58,6 +61,9 @@ public class SearchQueryGenerationUtil {
 		}
 
 		TelemetryManager.log("Returning Get Node By Unique Id Cypher Query: " + query);
+		stopWatch.stop();
+		long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+		TelemetryManager.info("Execution time for SearchQueryGenerationUtil generateGetNodeByUniqueIdCypherQuery function : " + durationInSeconds + " seconds");
 		return query.toString();
 	}
 

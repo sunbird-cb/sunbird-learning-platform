@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
 import org.sunbird.common.exception.ClientException;
@@ -324,6 +325,9 @@ public class NodeManagerImpl extends BaseGraphManager implements INodeManager {
 	 */
 	@Override
 	public void updateDataNode(final Request request) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		TelemetryManager.log("NodeManagerImpl updateDataNode function started");
 		final ActorRef parent = getSender();
 		String graphId = (String) request.getContext().get(GraphHeaderParams.graph_id.name());
 		String nodeId = (String) request.get(GraphDACParams.node_id.name());
@@ -407,8 +411,10 @@ public class NodeManagerImpl extends BaseGraphManager implements INodeManager {
 				ERROR(GraphEngineErrorCodes.ERR_GRAPH_UPDATE_NODE_NOT_FOUND.name(), "Node Not Found",
 						ResponseCode.RESOURCE_NOT_FOUND, GraphDACParams.messages.name(), messages, parent);
 			}
-
 		}
+		stopWatch.stop();
+		long durationInSeconds = stopWatch.getTime() / 1000;
+		TelemetryManager.log("NodeManagerImpl updateDataNode function completed in " +  durationInSeconds  + " seconds");
 	}
 
 	@SuppressWarnings("unchecked")

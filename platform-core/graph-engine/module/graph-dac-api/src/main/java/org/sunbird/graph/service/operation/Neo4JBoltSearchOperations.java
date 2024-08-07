@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.dto.Property;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.exception.ResourceNotFoundException;
@@ -109,8 +110,10 @@ public class Neo4JBoltSearchOperations {
 	 * @return the node by unique id
 	 */
 	public static Node getNodeByUniqueId(String graphId, String nodeId, Boolean getTags, Request request) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
 		TelemetryManager.log("Graph Id: " + graphId + "\nNode Id: " + nodeId + "\nGet Tags:" + getTags);
-
+		TelemetryManager.log("Neo4JBoltSearchOperations getNodeByUniqueId function started");
 		if (StringUtils.isBlank(graphId))
 			throw new ClientException(DACErrorCodeConstants.INVALID_GRAPH.name(),
 					DACErrorMessageConstants.INVALID_GRAPH_ID + " | ['Get Node By Unique Id' Operation Failed.]");
@@ -122,6 +125,9 @@ public class Neo4JBoltSearchOperations {
 		
 		Node node = (Node) NodeCacheManager.getDataNode(graphId, nodeId);
 		if (null != node) {
+			stopWatch.stop();
+			long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+			TelemetryManager.info("Execution time for Neo4JBoltSearchOperations getNodeByUniqueId function returning node from cache: " + durationInSeconds + " seconds");
 			TelemetryManager.info("Fetched node from in-memory cache: "+node.getIdentifier());
 			return node;
 		} else {
@@ -156,6 +162,9 @@ public class Neo4JBoltSearchOperations {
 								startNodeMap, endNodeMap);
 				}
 			}
+			stopWatch.stop();
+			long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+			TelemetryManager.info("Execution time for Neo4JBoltSearchOperations getNodeByUniqueId function: " + durationInSeconds + " seconds");
 			return node;
 		}
 	}

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sunbird.common.dto.NodeDTO;
 import org.sunbird.graph.dac.enums.SystemProperties;
@@ -22,6 +23,9 @@ public class ConvertToGraphNode {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Node convertToGraphNode(Map<String, Object> map, DefinitionDTO definition, Node graphNode) throws Exception {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        TelemetryManager.info("Started convertToGraphNode function");
 		Node node = new Node();
         if (null != map && !map.isEmpty()) {
             Map<String, String> inRelDefMap = new HashMap<String, String>();
@@ -89,6 +93,10 @@ public class ConvertToGraphNode {
             node.setInRelations(inRelations);
             node.setOutRelations(outRelations);
             node.setMetadata(metadata);
+            stopWatch.stop();
+            long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+            TelemetryManager.info("Execution time for convertToGraphNode function: " + durationInSeconds + " seconds");
+            TelemetryManager.log("NodeData inRelations and nodeMetadata and outRelations "+(List<Relation>) node.getInRelations()+", ::"+(Map<String,Object>)node.getMetadata() + ", ::" +(List<Relation>)node.getOutRelations());
         }
         return node;
 	}
@@ -114,6 +122,9 @@ public class ConvertToGraphNode {
     }
     
     private static Map<String, List<Relation>> getDBRelations(DefinitionDTO definition, Node graphNode, Map<String, Object> map) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        TelemetryManager.log("ConvertToGraphNode getDBRelations started");
     	List<Relation> inRelations = null;
         List<Relation> outRelations = null;
     	if (null != graphNode) {
@@ -152,6 +163,9 @@ public class ConvertToGraphNode {
     	Map<String, List<Relation>> relationMaps = new HashMap<String, List<Relation>>();
     	relationMaps.put("in", inRelations);
     	relationMaps.put("out", outRelations);
+        stopWatch.stop();
+        long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+        TelemetryManager.info("Execution time for getDBRelations function: " + durationInSeconds + " seconds");
     	return relationMaps;
     }
     

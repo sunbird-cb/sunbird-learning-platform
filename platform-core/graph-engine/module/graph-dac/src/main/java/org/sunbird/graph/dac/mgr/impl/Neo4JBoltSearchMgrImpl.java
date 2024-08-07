@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.dto.Property;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
@@ -23,6 +24,7 @@ import org.sunbird.graph.dac.model.SearchCriteria;
 import org.sunbird.graph.dac.model.SubGraph;
 import org.sunbird.graph.dac.model.Traverser;
 import org.sunbird.graph.service.operation.Neo4JBoltSearchOperations;
+import org.sunbird.telemetry.logger.TelemetryManager;
 
 public class Neo4JBoltSearchMgrImpl extends BaseDACMgr implements IGraphDACSearchMgr {
 	
@@ -43,6 +45,9 @@ public class Neo4JBoltSearchMgrImpl extends BaseDACMgr implements IGraphDACSearc
 
     @Override
 	public Response getNodeByUniqueId(Request request) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        TelemetryManager.log("Neo4jBoltSearchMgrImpl getNodeByUniqueId function started");
         String graphId = (String) request.getContext().get(GraphHeaderParams.graph_id.name());
         String nodeId = (String) request.get(GraphDACParams.node_id.name());
         Boolean getTags = (Boolean) request.get(GraphDACParams.get_tags.name());
@@ -51,6 +56,9 @@ public class Neo4JBoltSearchMgrImpl extends BaseDACMgr implements IGraphDACSearc
         } else {
             try {
 				Node node = Neo4JBoltSearchOperations.getNodeByUniqueId(graphId, nodeId, getTags, request);
+                stopWatch.stop();
+                long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+                TelemetryManager.log("Neo4jBoltSearchMgrImpl getNodeByUniqueId function completed in " + durationInSeconds + " seconds");
 				return OK(GraphDACParams.node.name(), node);
             } catch (Exception e) {
 				return ERROR(e);
