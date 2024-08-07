@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.Platform;
 import org.sunbird.common.Slug;
 import org.sunbird.common.dto.Request;
@@ -102,7 +103,9 @@ public class BaseFrameworkManager extends BaseManager {
 	protected Response update(String identifier, String objectType, Map<String, Object> map) {
 		if (map.containsKey("translations"))
 			validateTranslation(map);
-
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		TelemetryManager.log("BaseFramework update function started");
 		DefinitionDTO definition = getDefinition(GRAPH_ID, objectType);
 		Response getNodeResponse = getDataNode(GRAPH_ID, identifier);
 		Node graphNode = (Node) getNodeResponse.get(GraphDACParams.node.name());
@@ -112,6 +115,9 @@ public class BaseFrameworkManager extends BaseManager {
 			domainObj.setIdentifier(identifier);
 			domainObj.setObjectType(objectType);
 			Response updateResponse = updateDataNode(domainObj);
+			stopWatch.stop();
+			long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+			TelemetryManager.info("Execution time for BaseFrameworkManager update function: " + durationInSeconds + " seconds");
 			return updateResponse;
 		} catch (Exception e) {
 			return ERROR("ERR_SERVER_ERROR", "Internal error", ResponseCode.SERVER_ERROR, e.getMessage(), null);

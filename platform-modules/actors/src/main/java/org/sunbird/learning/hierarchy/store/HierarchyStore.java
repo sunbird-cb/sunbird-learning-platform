@@ -6,6 +6,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.cassandra.connector.util.CassandraConnector;
 import org.sunbird.cassandra.store.CassandraStore;
 import org.sunbird.common.Platform;
@@ -40,12 +41,18 @@ public class HierarchyStore extends CassandraStore {
 
     public void saveOrUpdateHierarchy(String contentId, Map<String, Object> hierarchy) {
         try {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            TelemetryManager.log("HierarchyStore saveOrUpdateHierarchy function started");
             String query = "UPDATE " + getKeyspace() + "." + getTable() + " SET hierarchy = ? WHERE identifier = ?";
             String hierarchyData = mapper.writeValueAsString(hierarchy);
             Session session = CassandraConnector.getSession();
             PreparedStatement statement = session.prepare(query);
             BoundStatement boundStatement = new BoundStatement(statement);
             session.execute(boundStatement.bind(hierarchyData, contentId));
+            stopWatch.stop();
+            long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+            TelemetryManager.info("Execution time for HierarchyStore saveOrUpdateHierarchy function: " + durationInSeconds + " seconds");
         } catch (JsonProcessingException e) {
             TelemetryManager.error("Error while updating collection hierarchy for ID" + contentId, e);
         }

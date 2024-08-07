@@ -6,6 +6,7 @@ package org.sunbird.learning.framework;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.sunbird.common.Platform;
 import org.sunbird.common.dto.Request;
 import org.sunbird.common.dto.Response;
@@ -53,6 +54,9 @@ public class FrameworkHierarchy extends BaseManager {
 	 * @throws Exception
 	 */
 	public void generateFrameworkHierarchy(String id) throws Exception {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		TelemetryManager.log("FrameworkHierarchy generateFrameworkHierarchy function started");
 		Response responseNode = getDataNode(GRAPH_ID, id);
 		if (checkError(responseNode))
 			throw new ResourceNotFoundException("ERR_DATA_NOT_FOUND", "Data not found with id : " + id);
@@ -61,7 +65,6 @@ public class FrameworkHierarchy extends BaseManager {
 			FrameworkCache.delete(id);
 			Map<String, Object> frameworkDocument = new HashMap<>();
 			Map<String, Object> frameworkHierarchy = getHierarchy(node.getIdentifier(), 0, false, true);
-			TelemetryManager.info("frameworkHierarchy map::: "+frameworkHierarchy);
 			CategoryCache.setFramework(node.getIdentifier(), frameworkHierarchy);
 
 			frameworkDocument.putAll(frameworkHierarchy);
@@ -74,6 +77,9 @@ public class FrameworkHierarchy extends BaseManager {
 					frameworkDocument.put(field, node.getMetadata().get(field));
 			}
 			hierarchyStore.saveOrUpdateHierarchy(node.getIdentifier(),frameworkDocument);
+			stopWatch.stop();
+			long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+			TelemetryManager.info("Execution time for FrameworkHierarchy generateFrameworkHierarchy function: " + durationInSeconds + " seconds");
 		} else {
 			throw new ClientException(ResponseCode.CLIENT_ERROR.name(), "The object with given identifier is not a framework: " + id);
 		}
@@ -96,6 +102,9 @@ public class FrameworkHierarchy extends BaseManager {
 
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> getHierarchy(String id, int index, boolean includeMetadata, boolean includeRelations) throws Exception {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		TelemetryManager.log("FrameworkHierarchy getHierarchy function started");
 		Map<String, Object> data = new HashMap<String, Object>();
 		Response responseNode = getDataNode(GRAPH_ID, id);
 		if (checkError(responseNode))
@@ -184,6 +193,9 @@ public class FrameworkHierarchy extends BaseManager {
 		}
 		String jsonData = mapper.writeValueAsString(data);
 		TelemetryManager.info("printing Hierarchy data: "+jsonData);
+		stopWatch.stop();
+		long durationInSeconds = stopWatch.getTime() / 1000; // Duration in seconds
+		TelemetryManager.info("Execution time for FrameworkHierarchy getHierarchy function: " + durationInSeconds + " seconds");
 		return data;
 	}
 
